@@ -1,62 +1,118 @@
-/**
- * This GPIO example applies hardware PWM to dim/brighten an
- * LED based on the value of an analogue input.
- *
- * Because analogWrite isn't implemented on the ESP32, this
- * approach uses the lower-level ESP32 helper functions for hardware PWM
- */
+
 #include <Arduino.h>
 #include <HardwareSerial.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
 
-const int MIN_ANALOGUE = 0;
-const int MAX_ANALOGUE = 4095;
-const int MAX_PWM_DUTY = 100;
-const int MIN_PWM_DUTY = 0;
+// Analogue Converting Commented Out
+// const int MIN_ANALOGUE = 0;
+// const int MAX_ANALOGUE = 4095;
+// const int MAX_PWM_DUTY = 255;
+// const int MIN_PWM_DUTY = 0;
 
-const int LED_PIN = 12;
-const int RES_PIN = 26;
+// const int LED_PIN = 12;
 
-//sets up the ESP32's ADC on LED_PIN
-// at a suitable resolution
+const int RED_PIN = 14;
+const int GREEN_PIN = 12;
+const int BLUE_PIN = 13;
+
+// setting PWM properties
+const int freq = 5000;
+const int redChannel = 0;
+const int greenChannel = 1;
+const int blueChannel = 2;
+const int resolution = 8;
+
+//setting sensor pins
+const int DHT_11_PIN = 26;
+
+unsigned long lastChangeTime;
+int delayValue = 1000;
+
+DHT dht(DHT_11_PIN, DHT11);
+
+enum Demand
+{
+	HEAT,
+	COOL,
+	PASSIVE
+};
+
+boolean timeDiff(unsigned long start, int specifiedDelay)
+{
+	return (millis() - start >= specifiedDelay);
+}
+
 void esp32Setup()
 {
-  ledcAttachPin(LED_PIN, 1);
-  ledcSetup(1, 12000, 8);
+	// ledcAttachPin(LED_PIN, 1);
+	// ledcSetup(1, 12000, 8);
+
+	ledcSetup(redChannel, freq, resolution);
+	ledcSetup(greenChannel, freq, resolution);
+	ledcSetup(blueChannel, freq, resolution);
+	ledcAttachPin(RED_PIN, redChannel);
+	ledcAttachPin(GREEN_PIN, greenChannel);
+	ledcAttachPin(BLUE_PIN, blueChannel);
 }
 
 void setup()
 {
-  Serial.begin(115200);
-  pinMode(LED_PIN, OUTPUT);
-  esp32Setup();
+	Serial.begin(115200);
+	// pinMode(LED_PIN, OUTPUT);
+	esp32Setup();
+	dht.begin();
 }
 
-// main loop method. This performs 3-4 discrete tasks:
-// -samples the analogue pin
-// -scales the reading based on the ADC resolution to a PWM 0-100 duty
-// -logs this duty value every 500ms, whenever the duty changes
-// -places the LED in the appropriate state, using ledcWrite (ESP32)
 int oldDuty;
 boolean sensorReady = false;
+Demand d = PASSIVE;
+void handleTempChange(int temp)
+{
+	Serial.println(temp);
+	if (temp == 25)
+	{
+		d = PASSIVE;
+		ledcWrite(redChannel, 0);
+		ledcWrite(greenChannel, 255);
+		ledcWrite(blueChannel, 0);
+	}
+	else if (temp > 25)
+	{
+		d = COOL;
+		ledcWrite(redChannel, 0);
+		ledcWrite(greenChannel, 0);
+		ledcWrite(blueChannel, 255);
+	}
+	else
+	{
+		d = HEAT;
+		ledcWrite(redChannel, 255);
+		ledcWrite(greenChannel, 0);
+		ledcWrite(blueChannel, 0);
+	}
+}
 void loop()
 {
-  int aRead = analogRead(RES_PIN);
-  int duty = map(aRead, MIN_ANALOGUE, MAX_ANALOGUE, MIN_PWM_DUTY,
-                 MAX_PWM_DUTY);
+	if (timeDiff(lastChangeTime, delayValue))
+		handleTempChange(dht.readTemperature());
 
-  if (oldDuty != duty && millis() % 500 == 0)
-  {
-    oldDuty = duty;
-    // Serial.print("led ");
-    // Serial.println(duty);
+	// int aRead = analogRead(DHT_11_PIN);
+	// int duty = map(aRead, MIN_ANALOGUE, MAX_ANALOGUE, MIN_PWM_DUTY,
+	// 							 MAX_PWM_DUTY);
 
-    // check the sensor is working ok by
-    // seeing if the values are not min or max of the scale
-    if (duty != 0 && duty != 100 && !sensorReady)
-    {
-      sensorReady = true;
-      Serial.println("Photoresistor sensor is ready.");
-    }
-  }
-  ledcWrite(1, duty);
+	// if (oldDuty != duty && millis() % 500 == 0)
+	// {
+	// 	oldDuty = duty;
+	// 	Serial.println(duty);
+
+	// 	// check the sensor is working ok by
+	// 	// seeing if the values are not min or max of the scale
+	// 	if (duty != 0 && duty != 2147483647 && !sensorReady)
+	// 	{
+	// 		sensorReady = true;
+	// 		Serial.println("Photoresistor sensor is ready.");
+	// 	}
+	// }
+	// ledcWrite(1, duty);
 }
