@@ -27,7 +27,7 @@ const int resolution = 8;
 const int DHT_11_PIN = 26;
 
 unsigned long lastChangeTime;
-int delayValue = 2000;
+int delayValue = 5000;
 
 DHT dht(DHT_11_PIN, DHT11);
 
@@ -67,11 +67,10 @@ void setup()
 Demand d = PASSIVE;
 void handleTempChange(int temp)
 {
-	Serial.print("Air temperature: ");
-	Serial.print(temp);
-	Serial.println("C.");
-	// change last changed time here to rest it
-	lastChangeTime = millis();
+	// Serial.print("Air temperature: ");
+	// Serial.print(temp);
+	// Serial.println("C.");
+
 	if (temp == 25)
 	{
 		d = PASSIVE;
@@ -114,13 +113,28 @@ void loop()
 	}
 	else
 	{
-		if (timeDiff(lastChangeTime, delayValue) && oldAirTemp != currentAirTemp)
+		if (timeDiff(lastChangeTime, delayValue) || oldAirTemp != currentAirTemp)
 		{
 			handleTempChange(currentAirTemp);
-			// Serial.println(oldAirTemp);
-			// Serial.println(currentAirTemp);
+
+			if (oldAirTemp != currentAirTemp)
+			{
+				Serial.print("New air temperature: ");
+				Serial.print(currentAirTemp);
+				Serial.println("C.");
+			}
+			else
+			{
+				Serial.println("Temperature sensor's current/latest value is " + String(currentAirTemp) + "C.");
+				// Serial.print("C. Old value was ");
+				// Serial.print(oldAirTemp);
+
+				// change last changed time here to rest it
+				lastChangeTime = millis();
+			}
+
+			oldAirTemp = currentAirTemp;
 		}
-		oldAirTemp = currentAirTemp;
 	}
 
 	// int aRead = analogRead(DHT_11_PIN);
