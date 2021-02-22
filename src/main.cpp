@@ -23,10 +23,15 @@ const int greenChannel = 1;
 const int blueChannel = 2;
 const int resolution = 8;
 
+// sensor validation
+boolean sensorReady = false;
+int currentAirTemp = 0;
+int oldAirTemp = 0;
+
 //setting sensor pins
 const int DHT_11_PIN = 26;
 
-unsigned long lastChangeTime;
+unsigned long lastDebugTime;
 int delayValue = 5000;
 
 DHT dht(DHT_11_PIN, DHT11);
@@ -94,49 +99,50 @@ void handleTempChange(int temp)
 	}
 }
 
-// int oldDuty;
-boolean sensorReady = false;
-int currentAirTemp = 0;
-int oldAirTemp = 0;
+void validateSensors(int temp)
+{
+	if (temp > -50 && temp < 60)
+	{
+		sensorReady = true;
+		Serial.println("Temperature sensor is ready to use.");
+		Serial.println();
+	}
+}
+
+void debugLog(int currentTemp)
+{
+	if (timeDiff(lastDebugTime, delayValue) || oldAirTemp != currentTemp)
+	{
+		handleTempChange(currentTemp);
+
+		if (oldAirTemp != currentTemp)
+		{
+			Serial.print("New air temperature: ");
+			Serial.print(currentTemp);
+			Serial.println("C.");
+		}
+		else
+		{
+			Serial.println("Temperature sensor's current/latest value is " + String(currentTemp) + "C.");
+			// change last changed time here to rest it
+			lastDebugTime = millis();
+		}
+		oldAirTemp = currentTemp;
+	}
+}
+
 void loop()
 {
 	currentAirTemp = dht.readTemperature();
 	//first check if the sensor is ready to use and not reading it extreme values
 	if (!sensorReady)
 	{
-		if (currentAirTemp > -50 && currentAirTemp < 60)
-		{
-			sensorReady = true;
-			Serial.println("Temperature sensor is ready to use.");
-			Serial.println();
-		}
+		validateSensors(currentAirTemp);
 	}
 	else
 	{
-		if (timeDiff(lastChangeTime, delayValue) || oldAirTemp != currentAirTemp)
-		{
-			handleTempChange(currentAirTemp);
-
-			if (oldAirTemp != currentAirTemp)
-			{
-				Serial.print("New air temperature: ");
-				Serial.print(currentAirTemp);
-				Serial.println("C.");
-			}
-			else
-			{
-				Serial.println("Temperature sensor's current/latest value is " + String(currentAirTemp) + "C.");
-				// Serial.print("C. Old value was ");
-				// Serial.print(oldAirTemp);
-
-				// change last changed time here to rest it
-				lastChangeTime = millis();
-			}
-
-			oldAirTemp = currentAirTemp;
-		}
+		debugLog(currentAirTemp);
 	}
-
 	// int aRead = analogRead(DHT_11_PIN);
 	// int duty = map(aRead, MIN_ANALOGUE, MAX_ANALOGUE, MIN_PWM_DUTY,
 	// 							 MAX_PWM_DUTY);
