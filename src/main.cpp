@@ -27,7 +27,7 @@ const int resolution = 8;
 const int DHT_11_PIN = 26;
 
 unsigned long lastChangeTime;
-int delayValue = 1000;
+int delayValue = 2000;
 
 DHT dht(DHT_11_PIN, DHT11);
 
@@ -64,12 +64,14 @@ void setup()
 	dht.begin();
 }
 
-int oldDuty;
-boolean sensorReady = false;
 Demand d = PASSIVE;
 void handleTempChange(int temp)
 {
-	Serial.println(temp);
+	Serial.print("Air temperature: ");
+	Serial.print(temp);
+	Serial.println("C.");
+	// change last changed time here to rest it
+	lastChangeTime = millis();
 	if (temp == 25)
 	{
 		d = PASSIVE;
@@ -92,10 +94,34 @@ void handleTempChange(int temp)
 		ledcWrite(blueChannel, 0);
 	}
 }
+
+// int oldDuty;
+boolean sensorReady = false;
+int currentAirTemp = 0;
+int oldAirTemp = 0;
 void loop()
 {
-	if (timeDiff(lastChangeTime, delayValue))
-		handleTempChange(dht.readTemperature());
+	currentAirTemp = dht.readTemperature();
+	//first check if the sensor is ready to use and not reading it extreme values
+	if (!sensorReady)
+	{
+		if (currentAirTemp > -50 && currentAirTemp < 60)
+		{
+			sensorReady = true;
+			Serial.println("Temperature sensor is ready to use.");
+			Serial.println();
+		}
+	}
+	else
+	{
+		if (timeDiff(lastChangeTime, delayValue) && oldAirTemp != currentAirTemp)
+		{
+			handleTempChange(currentAirTemp);
+			// Serial.println(oldAirTemp);
+			// Serial.println(currentAirTemp);
+		}
+		oldAirTemp = currentAirTemp;
+	}
 
 	// int aRead = analogRead(DHT_11_PIN);
 	// int duty = map(aRead, MIN_ANALOGUE, MAX_ANALOGUE, MIN_PWM_DUTY,
