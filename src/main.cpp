@@ -104,8 +104,7 @@ void validateSensors(int temp)
 	if (temp > -50 && temp < 60)
 	{
 		sensorReady = true;
-		Serial.println("Temperature sensor is ready to use.");
-		Serial.println();
+		Serial.println("Temperature sensor is ready to use.\n");
 	}
 }
 
@@ -117,9 +116,7 @@ void debugLog(int currentTemp)
 
 		if (oldAirTemp != currentTemp)
 		{
-			Serial.print("New air temperature: ");
-			Serial.print(currentTemp);
-			Serial.println("C.");
+			Serial.println("New air temperature: " + String(currentTemp) + "C.");
 		}
 		else
 		{
