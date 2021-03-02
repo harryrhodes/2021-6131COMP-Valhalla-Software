@@ -1,10 +1,10 @@
-
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <SPI.h>
 #include <TFT_eSPI.h> // Hardware-specific library for the ST7735 screen
+#include <Encoder.h>
 
 // Analogue Converting Commented Out
 // const int MIN_ANALOGUE = 0;
@@ -25,10 +25,24 @@ const int greenChannel = 1;
 const int blueChannel = 2;
 const int resolution = 8;
 
+// rotary
+const int ROTARY_A = 16;
+const int ROTARY_B = 17;
+const int ROTARY_BUTTON = 5;
+unsigned long lastButtonPress = 0;
+
 // sensor validation
 boolean sensorReady = false;
 int currentAirTemp = 0;
+
+int minTemp = 20;
+int maxTemp = 20;
+
 int oldAirTemp = 0;
+int oldMenuSelect = 0;
+int currentMenuSelect = 0;
+int oldMinTemp = 20;
+int oldMaxTemp = 20;
 
 //setting sensor pins
 const int DHT_11_PIN = 26;
@@ -40,12 +54,24 @@ DHT dht(DHT_11_PIN, DHT11);
 
 TFT_eSPI tft = TFT_eSPI();
 
+Encoder encoderMenu(ROTARY_A, ROTARY_B, 2);
+Encoder encoderTemp(ROTARY_A, ROTARY_B, 40);
+
 enum Demand
 {
 	HEAT,
 	COOL,
 	PASSIVE
 };
+
+enum Choice
+{
+	MENU,
+	MIN,
+	MAX
+};
+
+Choice choice = MENU;
 
 boolean timeDiff(unsigned long start, int specifiedDelay)
 {
@@ -54,9 +80,6 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 
 void esp32Setup()
 {
-	// ledcAttachPin(LED_PIN, 1);
-	// ledcSetup(1, 12000, 8);
-
 	ledcSetup(redChannel, freq, resolution);
 	ledcSetup(greenChannel, freq, resolution);
 	ledcSetup(blueChannel, freq, resolution);
@@ -70,6 +93,7 @@ void setup()
 	Serial.begin(115200);
 	// pinMode(LED_PIN, OUTPUT);
 	esp32Setup();
+	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
 
 	// initialise the screen
 	tft.init();
@@ -86,21 +110,21 @@ void handleTempChange(int temp)
 	// Serial.print(temp);
 	// Serial.println("C.");
 
-	if (temp == 22)
+	if (temp <= maxTemp && temp >= minTemp)
 	{
 		d = PASSIVE;
 		ledcWrite(redChannel, 0);
 		ledcWrite(greenChannel, 255);
 		ledcWrite(blueChannel, 0);
 	}
-	else if (temp > 25)
+	else if (temp > maxTemp)
 	{
 		d = COOL;
 		ledcWrite(redChannel, 0);
 		ledcWrite(greenChannel, 0);
 		ledcWrite(blueChannel, 255);
 	}
-	else
+	else if (temp < minTemp)
 	{
 		d = HEAT;
 		ledcWrite(redChannel, 255);
@@ -138,21 +162,82 @@ void debugLog(int currentTemp)
 	}
 }
 
+void checkButtonState()
+{
+	// Read the button state
+	int btnState = digitalRead(ROTARY_BUTTON);
+
+	//If we detect LOW signal, button is pressed
+	if (btnState == LOW)
+	{
+		Serial.println("Pressed");
+		//if 50ms have passed since last LOW pulse, it means that the
+		//button has been pressed, released and pressed again
+		if (timeDiff(lastButtonPress, 50))
+		{
+			if (choice == MIN || choice == MAX)
+			{
+				choice = MENU;
+			}
+			else if (choice == MENU && encoderMenu.rangeCheck(2, 4) == 1)
+			{
+				oldMenuSelect = 10;
+				choice = MIN;
+			}
+			else if (choice == MENU && encoderMenu.rangeCheck(2, 4) == 2)
+			{
+				oldMenuSelect = 10;
+				choice = MAX;
+			}
+		}
+		// Remember last button press event
+		lastButtonPress = millis();
+	}
+}
+
 void display(int currentTemp)
 {
+	if (choice == MENU)
+		currentMenuSelect = encoderMenu.rangeCheck(2, 4);
+	if (choice == MIN)
+		minTemp = encoderTemp.rangeCheck(20, 56);
+	if (choice == MAX)
+		maxTemp = encoderTemp.rangeCheck(20, 56);
+
 	//only reset the display if there is a change
-	if (oldAirTemp != currentTemp)
+	if (oldAirTemp != currentTemp || oldMenuSelect != currentMenuSelect || oldMinTemp != minTemp || oldMaxTemp != maxTemp)
 	{
 		tft.setCursor(0, 0, 2);
 		//font to white and background to black
 		tft.setTextColor(TFT_WHITE, TFT_BLACK);
 		tft.setTextSize(1);
 		tft.println("Temperature: " + String(currentTemp) + "C");
-		tft.println("Min: 25C, Max: 25C");
-		tft.println("OCCUPIED / VACANT");
+		tft.println("Min: " + String(minTemp) + "C, Max: " + String(maxTemp) + "C");
+		// tft.println("Vacant");
+		tft.println("Occupied");
 		tft.println("");
-		tft.println("Set Min Temp ");
-		tft.println("Set Max Temp ");
+		tft.print("Set Min Temp ");
+		if (currentMenuSelect == 1)
+		{
+			tft.println("<-");
+		}
+		else
+		{
+			tft.println("  ");
+		}
+		tft.print("Set Max Temp ");
+		if (currentMenuSelect == 2)
+		{
+			tft.println("<-");
+		}
+		else
+		{
+			tft.println("  ");
+		}
+
+		oldMenuSelect = currentMenuSelect;
+		oldMinTemp = minTemp;
+		oldMaxTemp = maxTemp;
 	}
 }
 
@@ -170,27 +255,9 @@ void loop()
 	}
 	else
 	{
+		checkButtonState();
 		display(currentAirTemp);
 		// occupationDisplay();
 		debugLog(currentAirTemp);
 	}
-
-	// int aRead = analogRead(DHT_11_PIN);
-	// int duty = map(aRead, MIN_ANALOGUE, MAX_ANALOGUE, MIN_PWM_DUTY,
-	// 							 MAX_PWM_DUTY);
-
-	// if (oldDuty != duty && millis() % 500 == 0)
-	// {
-	// 	oldDuty = duty;
-	// 	Serial.println(duty);
-
-	// 	// check the sensor is working ok by
-	// 	// seeing if the values are not min or max of the scale
-	// 	if (duty != 0 && duty != 2147483647 && !sensorReady)
-	// 	{
-	// 		sensorReady = true;
-	// 		Serial.println("Photoresistor sensor is ready.");
-	// 	}
-	// }
-	// ledcWrite(1, duty);
 }
