@@ -170,23 +170,24 @@ void checkButtonState()
 	//If we detect LOW signal, button is pressed
 	if (btnState == LOW)
 	{
-		Serial.println("Pressed");
+		// Serial.println("Pressed");
 		//if 50ms have passed since last LOW pulse, it means that the
 		//button has been pressed, released and pressed again
 		if (timeDiff(lastButtonPress, 50))
 		{
 			if (choice == MIN || choice == MAX)
 			{
+				oldMenuSelect = 0;
 				choice = MENU;
 			}
 			else if (choice == MENU && encoderMenu.rangeCheck(2, 4) == 1)
 			{
-				oldMenuSelect = 10;
+				oldMenuSelect = 0;
 				choice = MIN;
 			}
 			else if (choice == MENU && encoderMenu.rangeCheck(2, 4) == 2)
 			{
-				oldMenuSelect = 10;
+				oldMenuSelect = 0;
 				choice = MAX;
 			}
 		}
@@ -212,7 +213,20 @@ void display(int currentTemp)
 		tft.setTextColor(TFT_WHITE, TFT_BLACK);
 		tft.setTextSize(1);
 		tft.println("Temperature: " + String(currentTemp) + "C");
-		tft.println("Min: " + String(minTemp) + "C, Max: " + String(maxTemp) + "C");
+		tft.print("Min: ");
+		if (choice == MIN)
+		{
+			tft.setTextColor(TFT_BLACK, TFT_WHITE);
+		}
+		tft.print(String(minTemp) + "C");
+		tft.setTextColor(TFT_WHITE, TFT_BLACK);
+		tft.print(", Max: ");
+		if (choice == MAX)
+		{
+			tft.setTextColor(TFT_BLACK, TFT_WHITE);
+		}
+		tft.println(String(maxTemp) + "C");
+		tft.setTextColor(TFT_WHITE, TFT_BLACK);
 		// tft.println("Vacant");
 		tft.println("Occupied");
 		tft.println("");
