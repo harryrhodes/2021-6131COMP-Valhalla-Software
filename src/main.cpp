@@ -144,6 +144,7 @@ void validateSensors(int temp)
 
 void debugLog(int currentTemp)
 {
+	//temperature log
 	if (timeDiff(lastDebugTime, delayValue) || oldAirTemp != currentTemp)
 	{
 		handleTempChange(currentTemp);
@@ -177,6 +178,16 @@ void checkButtonState()
 		{
 			if (choice == MIN || choice == MAX)
 			{
+				// log new change
+				if (choice == MIN)
+				{
+					Serial.println("New min temperature set to: " + String(minTemp) + "C.");
+				}
+				else if (choice == MAX)
+				{
+					Serial.println("New max temperature set to: " + String(maxTemp) + "C.");
+				}
+
 				oldMenuSelect = 0;
 				choice = MENU;
 			}
@@ -255,10 +266,6 @@ void display(int currentTemp)
 	}
 }
 
-// void occupationDisplay()
-// {
-// }
-
 void loop()
 {
 	currentAirTemp = dht.readTemperature();
@@ -269,9 +276,8 @@ void loop()
 	}
 	else
 	{
-		checkButtonState();
-		display(currentAirTemp);
-		// occupationDisplay();
-		debugLog(currentAirTemp);
+		checkButtonState();		  // #1
+		debugLog(currentAirTemp); // #2
+		display(currentAirTemp);  // #3
 	}
 }
