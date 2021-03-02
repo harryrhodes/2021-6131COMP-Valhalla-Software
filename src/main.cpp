@@ -3,6 +3,8 @@
 #include <HardwareSerial.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <SPI.h>
+#include <TFT_eSPI.h> // Hardware-specific library for the ST7735 screen
 
 // Analogue Converting Commented Out
 // const int MIN_ANALOGUE = 0;
@@ -36,6 +38,8 @@ int delayValue = 5000;
 
 DHT dht(DHT_11_PIN, DHT11);
 
+TFT_eSPI tft = TFT_eSPI();
+
 enum Demand
 {
 	HEAT,
@@ -66,6 +70,12 @@ void setup()
 	Serial.begin(115200);
 	// pinMode(LED_PIN, OUTPUT);
 	esp32Setup();
+
+	// initialise the screen
+	tft.init();
+	tft.setRotation(4);
+	tft.fillScreen(TFT_BLACK);
+
 	dht.begin();
 }
 
@@ -76,7 +86,7 @@ void handleTempChange(int temp)
 	// Serial.print(temp);
 	// Serial.println("C.");
 
-	if (temp == 25)
+	if (temp == 22)
 	{
 		d = PASSIVE;
 		ledcWrite(redChannel, 0);
@@ -128,6 +138,28 @@ void debugLog(int currentTemp)
 	}
 }
 
+void display(int currentTemp)
+{
+	//only reset the display if there is a change
+	if (oldAirTemp != currentTemp)
+	{
+		tft.setCursor(0, 0, 2);
+		//font to white and background to black
+		tft.setTextColor(TFT_WHITE, TFT_BLACK);
+		tft.setTextSize(1);
+		tft.println("Temperature: " + String(currentTemp) + "C");
+		tft.println("Min: 25C, Max: 25C");
+		tft.println("OCCUPIED / VACANT");
+		tft.println("");
+		tft.println("Set Min Temp ");
+		tft.println("Set Max Temp ");
+	}
+}
+
+// void occupationDisplay()
+// {
+// }
+
 void loop()
 {
 	currentAirTemp = dht.readTemperature();
@@ -138,8 +170,11 @@ void loop()
 	}
 	else
 	{
+		display(currentAirTemp);
+		// occupationDisplay();
 		debugLog(currentAirTemp);
 	}
+
 	// int aRead = analogRead(DHT_11_PIN);
 	// int duty = map(aRead, MIN_ANALOGUE, MAX_ANALOGUE, MIN_PWM_DUTY,
 	// 							 MAX_PWM_DUTY);
