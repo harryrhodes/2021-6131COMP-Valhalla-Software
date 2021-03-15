@@ -219,7 +219,7 @@ void debugLog(int currentTemp)
 			// change last changed time here to rest it
 			lastDebugTime = millis();
 		}
-		oldAirTemp = currentTemp;
+		// oldAirTemp = currentTemp;
 	}
 }
 
@@ -325,6 +325,7 @@ void display(int currentTemp)
 		oldMenuSelect = currentMenuSelect;
 		oldMinTemp = minTemp;
 		oldMaxTemp = maxTemp;
+		oldAirTemp = currentTemp;
 	}
 }
 
