@@ -14,10 +14,10 @@ app.post('/', (req, res) => {
         let nowDate = Date();
         let readingsString = `Date: ${nowDate}, Temperature: ${reading.temperature} , Building is: ${reading.buildingIs}.\n`;
 
-        console.log(readingsString);
-        logger.write(readingsString);
+        // console.log(readingsString);
+        logger.write(readingsString); // add the string to the file
     }
-    logger.end(); // close string
+    logger.end(); // close string logger
     res.end(); //send back empty page with status 200 (OK)
 });
 
