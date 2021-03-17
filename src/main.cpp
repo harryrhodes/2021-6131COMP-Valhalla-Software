@@ -63,17 +63,25 @@ const int chipSelect = 5;
 const char *minSettings = "/minSettings.txt";
 const char *maxSettings = "/maxSettings.txt";
 
+// SD card reader functions
+
 void getSettings() // Get saved settings from the sd card
 {
 	File min = SD.open(minSettings);
 	File max = SD.open(maxSettings);
 
-	String minLine = min.readStringUntil('/r');
-	minTemp = atoi(minLine.c_str());
-	Serial.println("Min setting got & set to " + String(minTemp));
-	String maxLine = max.readStringUntil('/r');
-	maxTemp = atoi(maxLine.c_str());
-	Serial.println("Max setting got & set to " + String(maxTemp));
+	if (min && max)
+	{
+		String minLine = min.readStringUntil('/r');
+		minTemp = atoi(minLine.c_str());
+		String maxLine = max.readStringUntil('/r');
+		maxTemp = atoi(maxLine.c_str());
+		Serial.println("\nSETTINGS READ SUCCESFULLY: Your starting Max temp is: " + String(maxTemp) + "C. Starting Min temp is: " + String(minTemp) + "C.\n");
+	}
+	else
+	{
+		Serial.println("Settings files not found - changing your min or max temp will build these files.");
+	}
 	min.close();
 	max.close();
 }
@@ -96,6 +104,8 @@ void overwriteSettings(int minTemp, int maxTemp) // alter the saved settings for
 	min.close();
 	max.close();
 }
+
+// SD Card reader functions end
 
 enum Demand
 {
@@ -130,7 +140,7 @@ void esp32Setup()
 
 void setup()
 {
-	Serial.begin(115200);
+	Serial.begin(9600);
 	// pinMode(LED_PIN, OUTPUT);
 	esp32Setup();
 	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
