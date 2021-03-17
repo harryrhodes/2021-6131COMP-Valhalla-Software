@@ -5,6 +5,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h> // Hardware-specific library for the ST7735 screen
 #include <Encoder.h>
+#include <SD.h>
 
 // Analogue Converting Commented Out
 // const int MIN_ANALOGUE = 0;
@@ -28,7 +29,7 @@ const int resolution = 8;
 // rotary
 const int ROTARY_A = 16;
 const int ROTARY_B = 17;
-const int ROTARY_BUTTON = 5;
+const int ROTARY_BUTTON = 32; // Remember to check I am not still plugged into 5 when you update your circuit!
 unsigned long lastButtonPress = 0;
 
 // sensor validation
@@ -56,6 +57,55 @@ TFT_eSPI tft = TFT_eSPI();
 
 Encoder encoderMenu(ROTARY_A, ROTARY_B, 2);
 Encoder encoderTemp(ROTARY_A, ROTARY_B, 40);
+
+// SD Card & Reader
+const int chipSelect = 5;
+const char *minSettings = "/minSettings.txt";
+const char *maxSettings = "/maxSettings.txt";
+
+// SD card reader functions
+
+void getSettings() // Get saved settings from the sd card
+{
+	File min = SD.open(minSettings);
+	File max = SD.open(maxSettings);
+
+	if (min && max)
+	{
+		String minLine = min.readStringUntil('/r');
+		minTemp = atoi(minLine.c_str());
+		String maxLine = max.readStringUntil('/r');
+		maxTemp = atoi(maxLine.c_str());
+		Serial.println("\nSETTINGS READ SUCCESSFULLY: Your starting Max temp is: " + String(maxTemp) + "C. Starting Min temp is: " + String(minTemp) + "C.\n");
+	}
+	else
+	{
+		Serial.println("Settings files not found - changing your min or max temp will build these files.");
+	}
+	min.close();
+	max.close();
+}
+
+void overwriteSettings(int minTemp, int maxTemp) // alter the saved settings for the temp
+{
+	File min = SD.open(minSettings, FILE_WRITE);
+	File max = SD.open(maxSettings, FILE_WRITE);
+	if (min && max)
+	{
+		min.println(String(minTemp));
+		max.println(String(maxTemp));
+		Serial.println("new temp saved to settings");
+	}
+	else
+	{
+		Serial.println("Couldn't open the settings file to begin overwrite!");
+		return;
+	}
+	min.close();
+	max.close();
+}
+
+// SD Card reader functions end
 
 enum Demand
 {
@@ -101,6 +151,26 @@ void setup()
 	tft.fillScreen(TFT_BLACK);
 
 	dht.begin();
+
+	SD.begin(chipSelect);
+	if (!SD.begin(chipSelect))
+	{
+		Serial.println("The SD card mount has failed!");
+		return;
+	}
+	uint8_t currentCard = SD.cardType();
+	if (currentCard == CARD_NONE)
+	{
+		Serial.println("No SD card currently present - no data will saved during this session!");
+		return;
+	}
+	Serial.println("SD Card initialisation starting");
+	if (!SD.begin(chipSelect))
+	{
+		Serial.println("The card initialisation has failed!");
+		return;
+	}
+	getSettings();
 }
 
 Demand d = PASSIVE;
@@ -159,7 +229,7 @@ void debugLog(int currentTemp)
 			// change last changed time here to rest it
 			lastDebugTime = millis();
 		}
-		oldAirTemp = currentTemp;
+		// oldAirTemp = currentTemp;
 	}
 }
 
@@ -182,10 +252,12 @@ void checkButtonState()
 				if (choice == MIN)
 				{
 					Serial.println("New min temperature set to: " + String(minTemp) + "C.");
+					overwriteSettings(minTemp, maxTemp); // save settings
 				}
 				else if (choice == MAX)
 				{
 					Serial.println("New max temperature set to: " + String(maxTemp) + "C.");
+					overwriteSettings(minTemp, maxTemp); // save settings
 				}
 
 				oldMenuSelect = 0;
@@ -263,6 +335,7 @@ void display(int currentTemp)
 		oldMenuSelect = currentMenuSelect;
 		oldMinTemp = minTemp;
 		oldMaxTemp = maxTemp;
+		oldAirTemp = currentTemp;
 	}
 }
 
