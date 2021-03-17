@@ -76,7 +76,7 @@ void getSettings() // Get saved settings from the sd card
 		minTemp = atoi(minLine.c_str());
 		String maxLine = max.readStringUntil('/r');
 		maxTemp = atoi(maxLine.c_str());
-		Serial.println("\nSETTINGS READ SUCCESFULLY: Your starting Max temp is: " + String(maxTemp) + "C. Starting Min temp is: " + String(minTemp) + "C.\n");
+		Serial.println("\nSETTINGS READ SUCCESSFULLY: Your starting Max temp is: " + String(maxTemp) + "C. Starting Min temp is: " + String(minTemp) + "C.\n");
 	}
 	else
 	{
