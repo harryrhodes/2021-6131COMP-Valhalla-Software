@@ -29,7 +29,7 @@ const int resolution = 8;
 // rotary
 const int ROTARY_A = 16;
 const int ROTARY_B = 17;
-const int ROTARY_BUTTON = 32; // I WAS 5 !!
+const int ROTARY_BUTTON = 32; // Remember to check I am not still plugged into 5 when you update your circuit!
 unsigned long lastButtonPress = 0;
 
 // sensor validation
@@ -140,7 +140,7 @@ void esp32Setup()
 
 void setup()
 {
-	Serial.begin(9600);
+	Serial.begin(115200);
 	// pinMode(LED_PIN, OUTPUT);
 	esp32Setup();
 	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
