@@ -301,14 +301,7 @@ void debugLog(int currentTemp)
 			// change last changed time here to rest it
 			lastDebugTime = millis();
 		}
-		else
-		{
-		};
 	}
-	else
-	{
-	}
-	// oldAirTemp = currentTemp;
 }
 
 void checkVacancy()
