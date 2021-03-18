@@ -32,6 +32,24 @@ const int ROTARY_B = 17;
 const int ROTARY_BUTTON = 32; // I WAS 5 !!
 unsigned long lastButtonPress = 0;
 
+//motion sensor
+const int MOTION_SENSOR = 25;
+int pirReading = 0;
+
+//const int currentState = 0;
+//Timer
+unsigned long sensorCheck;
+unsigned long warmUp = 60000;
+unsigned long loadingTime;
+unsigned long motionSensorTime;
+unsigned long currentTime;
+unsigned long startingTime;
+unsigned long targetTime;
+unsigned long timeout = 200;
+boolean startTimer = false;
+boolean motionSensorReady = false;
+boolean pirFunctionComplete = false;
+
 // sensor validation
 boolean sensorReady = false;
 int currentAirTemp = 0;
@@ -104,6 +122,12 @@ enum Demand
 	PASSIVE
 };
 
+enum BuildingState
+{
+	OCCUPIED,
+	VACANT
+};
+
 enum Choice
 {
 	MENU,
@@ -112,6 +136,8 @@ enum Choice
 };
 
 Choice choice = MENU;
+BuildingState buildingState = VACANT;
+BuildingState oldState = VACANT;
 
 boolean timeDiff(unsigned long start, int specifiedDelay)
 {
@@ -134,6 +160,7 @@ void setup()
 	// pinMode(LED_PIN, OUTPUT);
 	esp32Setup();
 	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
+	pinMode(MOTION_SENSOR, INPUT);
 
 	// initialise the screen
 	tft.init();
@@ -163,33 +190,45 @@ void setup()
 	getSettings();
 }
 
+void vacancyAlert(BuildingState buildingState)
+{
+	ledcWrite(redChannel, 255);
+	ledcWrite(greenChannel, 135);
+	ledcWrite(blueChannel, 0);
+}
+
 Demand d = PASSIVE;
 void handleTempChange(int temp)
 {
-	// Serial.print("Air temperature: ");
-	// Serial.print(temp);
-	// Serial.println("C.");
-
 	if (temp <= maxTemp && temp >= minTemp)
 	{
 		d = PASSIVE;
-		ledcWrite(redChannel, 0);
-		ledcWrite(greenChannel, 255);
-		ledcWrite(blueChannel, 0);
+		if (buildingState == OCCUPIED)
+		{
+			ledcWrite(redChannel, 0);
+			ledcWrite(greenChannel, 255);
+			ledcWrite(blueChannel, 0);
+		}
 	}
 	else if (temp > maxTemp)
 	{
 		d = COOL;
-		ledcWrite(redChannel, 0);
-		ledcWrite(greenChannel, 0);
-		ledcWrite(blueChannel, 255);
+		if (buildingState == OCCUPIED)
+		{
+			ledcWrite(redChannel, 0);
+			ledcWrite(greenChannel, 0);
+			ledcWrite(blueChannel, 255);
+		}
 	}
 	else if (temp < minTemp)
 	{
 		d = HEAT;
-		ledcWrite(redChannel, 255);
-		ledcWrite(greenChannel, 0);
-		ledcWrite(blueChannel, 0);
+		if (buildingState == OCCUPIED)
+		{
+			ledcWrite(redChannel, 255);
+			ledcWrite(greenChannel, 0);
+			ledcWrite(blueChannel, 0);
+		}
 	}
 }
 
@@ -198,14 +237,43 @@ void validateSensors(int temp)
 	if (temp > -50 && temp < 60)
 	{
 		sensorReady = true;
-		Serial.println("Temperature sensor is ready to use.\n");
+		Serial.println("Temperature sensor is ready to use");
+		Serial.println("PIR Sensor Warming Up\n");
+		loadingTime = millis();
+		motionSensorTime = loadingTime + warmUp;
+	}
+	else
+	{
+		Serial.println("Sensor Error");
+	};
+}
+
+void pirWarmUp()
+{
+	currentTime = millis();
+	if (currentTime >= motionSensorTime)
+	{
+		pirFunctionComplete = true;
+		Serial.println();
+		Serial.println("PIR Sensor Ready");
+		Serial.println();
+	}
+	else
+	{
+		buildingState = VACANT;
 	}
 }
 
 void debugLog(int currentTemp)
 {
+
+	if (buildingState == VACANT)
+	{
+		vacancyAlert(buildingState);
+	}
 	//temperature log
-	if (timeDiff(lastDebugTime, delayValue) || oldAirTemp != currentTemp)
+
+	if (timeDiff(lastDebugTime, delayValue) || oldAirTemp != currentTemp || oldState != buildingState)
 	{
 		handleTempChange(currentTemp);
 
@@ -213,14 +281,70 @@ void debugLog(int currentTemp)
 		{
 			Serial.println("New air temperature: " + String(currentTemp) + "C.");
 		}
-		else
+		else if (oldState != buildingState)
+		{
+			if (buildingState == OCCUPIED)
+			{
+				Serial.println("The Building state has changed to Occupied");
+			}
+			else
+			{
+				Serial.println("The Building State has changed to Vacant");
+			}
+		}
+		else if (timeDiff(lastDebugTime, delayValue))
 		{
 			Serial.println("Temperature sensor's current/latest value is " + String(currentTemp) + "C.");
-			// change last changed time here to rest it
-			lastDebugTime = millis();
+			if (buildingState == OCCUPIED)
+			{
+				Serial.println("The Current Building State is Occupied");
+			}
 		}
-		// oldAirTemp = currentTemp;
+		else
+		{
+			Serial.println("The Current state of the building is Vacant");
+		};
+		// change last changed time here to rest it
+		lastDebugTime = millis();
 	}
+	else
+	{
+	}
+	// oldAirTemp = currentTemp;
+}
+
+void checkVacancy()
+{
+	if (pirFunctionComplete == true)
+	{
+		pirReading = digitalRead(MOTION_SENSOR);
+		if (pirReading == HIGH)
+		{
+			buildingState = OCCUPIED;
+			//	Serial.println("Building is Occupied");
+			sensorCheck = 0;
+			startingTime = millis();
+			targetTime = startingTime + timeout;
+		}
+		else if (pirReading == LOW)
+		{
+			sensorCheck = millis();
+			if (sensorCheck >= targetTime)
+			{
+				buildingState = VACANT;
+				//		Serial.println("Building is Empty");
+			};
+		}
+		else
+		{
+			Serial.println("Error");
+		}
+	}
+	else
+	{
+	}
+
+	digitalWrite(MOTION_SENSOR, LOW);
 }
 
 void checkButtonState()
@@ -279,7 +403,7 @@ void display(int currentTemp)
 		maxTemp = encoderTemp.rangeCheck(20, 56);
 
 	//only reset the display if there is a change
-	if (oldAirTemp != currentTemp || oldMenuSelect != currentMenuSelect || oldMinTemp != minTemp || oldMaxTemp != maxTemp)
+	if (oldAirTemp != currentTemp || oldMenuSelect != currentMenuSelect || oldMinTemp != minTemp || oldMaxTemp != maxTemp || buildingState != oldState)
 	{
 		tft.setCursor(0, 0, 2);
 		//font to white and background to black
@@ -290,19 +414,34 @@ void display(int currentTemp)
 		if (choice == MIN)
 		{
 			tft.setTextColor(TFT_BLACK, TFT_WHITE);
-		}
+		};
 		tft.print(String(minTemp) + "C");
 		tft.setTextColor(TFT_WHITE, TFT_BLACK);
 		tft.print(", Max: ");
 		if (choice == MAX)
 		{
 			tft.setTextColor(TFT_BLACK, TFT_WHITE);
-		}
+		};
 		tft.println(String(maxTemp) + "C");
 		tft.setTextColor(TFT_WHITE, TFT_BLACK);
-		// tft.println("Vacant");
-		tft.println("Occupied");
-		tft.println("");
+		if (buildingState == OCCUPIED && pirFunctionComplete == true)
+		{
+			tft.println("Building: Occupied  ");
+			tft.println("");
+			oldState = OCCUPIED;
+		};
+		if (buildingState == VACANT && pirFunctionComplete == true)
+		{
+
+			tft.println("Building: Vacant    ");
+			tft.println("");
+			oldState = VACANT;
+		};
+		if (!pirFunctionComplete)
+		{
+			tft.println("PIR Sensor Loading");
+			tft.println("");
+		};
 		tft.print("Set Min Temp ");
 		if (currentMenuSelect == 1)
 		{
@@ -337,10 +476,19 @@ void loop()
 	{
 		validateSensors(currentAirTemp);
 	}
+	else if (!pirFunctionComplete)
+	{
+		pirWarmUp();
+		checkButtonState();		  // #1
+		checkVacancy();			  // #2
+		debugLog(currentAirTemp); // #3
+		display(currentAirTemp);  // #4
+	}
 	else
 	{
 		checkButtonState();		  // #1
-		debugLog(currentAirTemp); // #2
-		display(currentAirTemp);  // #3
+		checkVacancy();			  // #2
+		debugLog(currentAirTemp); // #3
+		display(currentAirTemp);  // #4
 	}
 }
