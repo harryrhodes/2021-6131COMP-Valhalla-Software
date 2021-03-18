@@ -299,13 +299,12 @@ void debugLog(int currentTemp)
 			{
 				Serial.println("The Current Building State is Occupied");
 			}
+			// change last changed time here to rest it
+			lastDebugTime = millis();
 		}
 		else
 		{
-			Serial.println("The Current state of the building is Vacant");
 		};
-		// change last changed time here to rest it
-		lastDebugTime = millis();
 	}
 	else
 	{
