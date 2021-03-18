@@ -294,11 +294,10 @@ void debugLog(int currentTemp)
 		}
 		else if (timeDiff(lastDebugTime, delayValue))
 		{
-			Serial.println("Temperature sensor's current/latest value is " + String(currentTemp) + "C.");
-			if (buildingState == OCCUPIED)
-			{
-				Serial.println("The Current Building State is Occupied");
-			}
+			Serial.print("Temperature sensor's current/latest value is " + String(currentTemp) + "C.");
+			Serial.print(" The Current Building State is ");
+			Serial.println(buildingState == OCCUPIED ? "Occupied." : "Vacant.");
+
 			// change last changed time here to rest it
 			lastDebugTime = millis();
 		}
