@@ -8,7 +8,7 @@ PIRSensor::PIRSensor(unsigned short pin, unsigned short initTime)
   this->initTime = initTime;
 }
 
-void PIRSensor::warmUp(unsigned short initTime, unsigned short warmUpTime)
+void PIRSensor::warmUp()
 {
   if (millis() >= initTime + warmUpTime)
   {
@@ -29,7 +29,7 @@ UserState PIRSensor::read(int currentTime)
   {
     lastMotionTime = millis();
     return UserState::PRESENT;
-    }
+  }
   else if (reading == LOW)
   {
     if (currentTime >= lastMotionTime + timeout)

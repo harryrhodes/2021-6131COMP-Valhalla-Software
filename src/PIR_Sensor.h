@@ -1,5 +1,6 @@
 #ifndef PIR_Sensor_H_
 #define PIR_Sensor_H_
+#include <User.h>
 class PIRSensor
 {
 private:
@@ -12,7 +13,7 @@ private:
 
 public:
   PIRSensor(unsigned short pin, unsigned short initTime);
-  void warmUp(unsigned short initTime, unsigned short warmUpTime);
+  void warmUp();
   bool isReady();
   UserState read(int currentTime);
 };

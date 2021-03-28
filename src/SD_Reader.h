@@ -1,5 +1,6 @@
 #ifndef SD_Reader_H_
 #define SD_Reader_H_
+#include <SD.h>
 class SDReader
 {
 private:
@@ -8,8 +9,8 @@ private:
 
 public:
   SDReader(unsigned short pin, char *file);
-  void init();
-  char readSettings();
+  bool init();
+  String readSettings();
   void writeSettings();
   void writeMinvalue(unsigned short v);
   void writeDebugLog(char, int currentTime);
