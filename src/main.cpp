@@ -2,7 +2,6 @@
 #include <HardwareSerial.h>
 #include <SPI.h>
 #include <TFT_eSPI.h> // Hardware-specific library for the ST7735 screen
-#include <Encoder.h>
 #include <RGB_LED.h>
 #include <User.h>
 #include <PIR_Sensor.h>
@@ -34,7 +33,7 @@ Choice c = MENU;
 // rotary
 const int ROTARY_A = 16;
 const int ROTARY_B = 17;
-const int ROTARY_BUTTON = 32; // Remember to check I am not still plugged into 5 when you update your circuit!
+const int ROTARY_BUTTON = 32;
 unsigned long lastButtonPress = 0;
 // sensor validation
 bool SDAvailable = false;
@@ -101,10 +100,6 @@ void handleTempChange(int temp)
 
 void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 {
-	if (user->getStatus() == UserState::ABSENT)
-	{
-		led->setRGBValue(255, 135, 0);
-	}
 	//temperature log
 	if (timeDiff(lastDebugTime, delayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
 	{
@@ -125,6 +120,7 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 			{
 				Serial.println("The Building State has changed to Vacant");
 				user->setStatus(UserState::ABSENT);
+				led->setRGBValue(255, 135, 0);
 			}
 		}
 		else if (timeDiff(lastDebugTime, delayValue))
@@ -139,9 +135,6 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 	}
 }
 
-void debugLog()
-{
-}
 void checkButtonState()
 {
 	// Read the button state
@@ -270,12 +263,13 @@ void loop()
 	if (!pirSensor->isReady())
 	{
 		pirSensor->warmUp();
+		led->setRGBValue(255, 135, 0);
 	}
 	else
 	{
 		int currentAirTempReading = dht.readTemperature();
-		checkButtonState();																											// #1
+		checkButtonState();														// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		display(currentAirTempReading);																					// #3
+		display(currentAirTempReading);											// #3
 	}
 }

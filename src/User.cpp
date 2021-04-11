@@ -7,12 +7,18 @@ User::User(unsigned short minTemp, unsigned short maxTemp)
 
 void User::setMinTemp(unsigned short v)
 {
-  minTemp = v;
+  if (v < maxTemp)
+  {
+    minTemp = v;
+  }
 }
 
 void User::setMaxTemp(unsigned short v)
 {
-  maxTemp = v;
+  if (v > minTemp)
+  {
+    maxTemp = v;
+  }
 }
 
 void User::setStatus(UserState s)
