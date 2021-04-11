@@ -2,6 +2,7 @@
 #include <HardwareSerial.h>
 #include <SPI.h>
 #include <TFT_eSPI.h> // Hardware-specific library for the ST7735 screen
+#include <Encoder.h>
 #include <RGB_LED.h>
 #include <User.h>
 #include <PIR_Sensor.h>
@@ -120,6 +121,7 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 			{
 				Serial.println("The Building State has changed to Vacant");
 				user->setStatus(UserState::ABSENT);
+
 				led->setRGBValue(255, 135, 0);
 			}
 		}
