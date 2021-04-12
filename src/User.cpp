@@ -7,7 +7,7 @@ User::User(unsigned short minTemp, unsigned short maxTemp)
 
 void User::setMinTemp(unsigned short v)
 {
-  if (v < maxTemp)
+  if (v < maxTemp && v >= 10 && v <= 28)
   {
     minTemp = v;
   }
@@ -15,7 +15,7 @@ void User::setMinTemp(unsigned short v)
 
 void User::setMaxTemp(unsigned short v)
 {
-  if (v > minTemp)
+  if (v > minTemp && v >= 10 && v <= 28)
   {
     maxTemp = v;
   }
