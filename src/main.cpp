@@ -42,8 +42,6 @@ int currentAirTemp = 0;
 int oldMenuSelect = 0;
 int currentMenuSelect = 0;
 //setting sensor pins
-const int DHT_11_PIN = 26;
-
 unsigned long lastDebugTime;
 int debugDelayValue = 5000;
 unsigned long lastOrangeBlinkTime;
@@ -297,8 +295,8 @@ void loop()
 	else
 	{
 		int currentAirTempReading = dht.readTemperature();
-		checkButtonState();														// #1
+		checkButtonState();																											// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		display(currentAirTempReading);											// #3
+		display(currentAirTempReading);																					// #3
 	}
 }
