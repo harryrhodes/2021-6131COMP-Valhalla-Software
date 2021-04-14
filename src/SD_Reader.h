@@ -5,7 +5,8 @@ class SDReader
 {
 private:
   unsigned short chipSelect;
-  char *file;
+  char *minSetting;
+  char *maxSetting;
 
 public:
   SDReader(unsigned short pin, char *file);
