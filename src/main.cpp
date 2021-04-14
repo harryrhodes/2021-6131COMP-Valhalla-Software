@@ -9,6 +9,16 @@
 #include <SD_Reader.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <HTTPClient.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiType.h>
+// #include <Reading.h>
+#include <ctime>
+#include <iostream>
+#include <vector>
+#include "time.h"
+#include <ArduinoJson.h>
 
 enum Demand
 {
@@ -27,6 +37,7 @@ enum Choice
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
+// Reading *readings = NULL;
 
 DHT dht(26, DHT11);
 Demand d = PASSIVE;
@@ -41,12 +52,24 @@ bool SDAvailable = false;
 int currentAirTemp = 0;
 int oldMenuSelect = 0;
 int currentMenuSelect = 0;
-//setting sensor pins
+
+// setting delay values
 unsigned long lastDebugTime;
 int debugDelayValue = 5000;
 unsigned long lastOrangeBlinkTime;
 boolean orangeBlink = true;
 int vacantDelayBlinkValue = 1000;
+unsigned long lastVolatileReadingTime;
+int volatileReadingDelayValue = 10000;
+unsigned long lastTransmissionTime;
+int transmissionDelayValue = 15000; // CHANGE TO 45000 BEFORE SUBMISSION
+
+std::vector<String> readings;
+
+//wi-fi settings
+const char *ssid = "Robert's iPhone";
+const char *password = "hello123";
+boolean wifiConnected = false;
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -66,6 +89,8 @@ void setup()
 	user = new User(20, 21);
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
+	// readings = new Reading();
+
 	//Load user settings
 	// SDReader *sd = new SDReader(5, "/settings");
 	// if (sd->init())
@@ -79,6 +104,14 @@ void setup()
 	tft.init();
 	tft.setRotation(4);
 	tft.fillScreen(TFT_BLACK);
+
+	// connect to wi-fi
+	WiFi.begin(ssid, password);
+
+	// set timers
+	lastDebugTime = millis();
+	lastVolatileReadingTime = millis();
+	lastTransmissionTime = millis();
 }
 
 void handleTempChange(int temp, UserState pirReading)
@@ -124,7 +157,7 @@ void vacantBuldingBlink()
 void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 {
 	//temperature log
-	if (timeDiff(lastDebugTime, debugDelayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
+	if (timeDiff(lastDebugTime, debugDelayValue) || timeDiff(lastVolatileReadingTime, volatileReadingDelayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
 	{
 		handleTempChange(currentAirTempReading, pirReading);
 
@@ -132,7 +165,8 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 		{
 			Serial.println("New air temperature: " + String(currentAirTempReading) + "C.");
 		}
-		else if (pirReading != user->getStatus())
+
+		if (pirReading != user->getStatus())
 		{
 			if (pirReading == UserState::PRESENT)
 			{
@@ -149,14 +183,30 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 				orangeBlink = true;
 			}
 		}
-		else if (timeDiff(lastDebugTime, debugDelayValue))
+
+		// 5 second debug console
+		if (timeDiff(lastDebugTime, debugDelayValue))
 		{
 			Serial.print("Temperature sensor's current/latest value is " + String(currentAirTempReading) + "C.");
 			Serial.print(" The User is ");
 			Serial.println(user->getStatus() == UserState::PRESENT ? "Present." : "Absent.");
-
-			// change last changed time here to rest it
+			// reset timer
 			lastDebugTime = millis();
+		}
+
+		// store readings in volatile memory every 10 seconds
+		if (timeDiff(lastVolatileReadingTime, volatileReadingDelayValue))
+		{
+			// current date and time on the current system
+			time_t now = time(0);
+			// convert now to string form
+			char *date_time = ctime(&now);
+
+			String reading = "Date: " + String(date_time) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
+			readings.push_back(reading);
+			Serial.println(readings.size());
+			// reset timer
+			lastVolatileReadingTime = millis();
 		}
 	}
 
@@ -285,8 +335,59 @@ void display(int currentAirTempReading)
 	}
 }
 
+void handleHttpTransmission()
+{
+	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
+	{
+		HTTPClient client;
+		String url = "https://localhost:4000";
+		client.begin(url);
+
+		client.addHeader("Content-Type", "application/json");
+
+		// add readings to the payload as an array
+		StaticJsonDocument<200> doc;
+		JsonArray data = doc.createNestedArray("data");
+
+		for (int i = 0; i < readings.size(); i++)
+		{
+			data.add(readings[i]);
+		}
+
+		String requestBody;
+		serializeJson(doc, requestBody);
+		int httpResponseCode = client.POST(requestBody);
+
+		// check the response
+		if (httpResponseCode > 0)
+		{
+			String response = client.getString();
+			Serial.println(httpResponseCode);
+			// if successful clear the memory
+			if (httpResponseCode == 200)
+			{
+				readings.clear();
+			}
+		}
+		else
+		{
+			Serial.println("Failed to send the readings to the server.");
+		}
+		// reset timer
+		lastTransmissionTime = millis();
+	}
+}
+
 void loop()
 {
+	if (WiFi.status() == WL_CONNECTED && !wifiConnected)
+	{
+		wifiConnected = true;
+		Serial.println("Connected to the WiFi network.");
+		// initialise the time in UTC
+		configTime(0, 3600, "pool.ntp.org");
+	}
+
 	if (!pirSensor->isReady())
 	{
 		pirSensor->warmUp();
@@ -295,8 +396,9 @@ void loop()
 	else
 	{
 		int currentAirTempReading = dht.readTemperature();
-		checkButtonState();																											// #1
+		checkButtonState();														// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		display(currentAirTempReading);																					// #3
+		display(currentAirTempReading);											// #3
+		handleHttpTransmission();												// #4
 	}
 }
