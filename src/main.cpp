@@ -31,7 +31,7 @@ User *user = NULL;
 RGBLed *led = NULL;
 SDReader *sd = NULL;
 Reader *reader = NULL;
-DHT dht(26, DHT11);
+DHT dht(26, DHT11); // this isn't an error its vsc being stupid
 Demand d = PASSIVE;
 Choice c = MENU;
 // rotary
@@ -63,10 +63,9 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 
 void setup()
 {
-	Serial.begin(9600);
+	Serial.begin(115200);
 	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
 	pirSensor = new PIRSensor(25, millis());
-	//user = new User(20, 21);
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
 
@@ -81,8 +80,12 @@ void setup()
 			user = new User(20, 21);
 		}
 	} // add else incase init crashes!
+	else {
+		Serial.println("ERROR: Couldn't get settings! Defaulting to default values");
+		user = new User(20, 21);
+	}
 
-	//
+	// initialise the reader
 	reader = new Reader();
 
 	// initialise the screen

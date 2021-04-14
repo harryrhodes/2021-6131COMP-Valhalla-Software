@@ -6,7 +6,7 @@ class Reader
 {
     private:
     unsigned long lastWrite;
-    const unsigned long interval = 10000; // 120000 = 2 mins, 1000 = 1s
+    const unsigned long interval = 120000; // 120000 = 2 mins, 1000 = 1s CHANGE ME TO LOWER WAIT TIME
     String currentValue;
 
     public:
