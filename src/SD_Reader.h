@@ -1,6 +1,7 @@
 #ifndef SD_Reader_H_
 #define SD_Reader_H_
 #include <SD.h>
+#include <string>
 class SDReader
 {
 private:
@@ -9,10 +10,11 @@ private:
   char *maxSetting;
 
 public:
-  SDReader(unsigned short pin, char *file);
+  SDReader(unsigned short pin, char *minSetting, char *maxSetting);
   bool init();
-  String readSettings();
-  void writeSettings();
+  std::vector<int> readSettings();
+  void writeMinSettings(int minTemp);
+  void writeMaxSettings(int maxTemp);
   void writeMinvalue(unsigned short v);
   void writeDebugLog(char, int currentTime);
 };

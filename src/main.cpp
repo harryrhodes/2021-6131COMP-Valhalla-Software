@@ -6,10 +6,11 @@
 #include <RGB_LED.h>
 #include <User.h>
 #include <PIR_Sensor.h>
-//#include <SD_Reader.h>
+#include <SD_Reader.h>
 #include <Reader.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <Reader.h>
 
 enum Demand
 {
@@ -28,7 +29,8 @@ enum Choice
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
-
+SDReader *sd = NULL;
+Reader *reader = NULL;
 DHT dht(26, DHT11);
 Demand d = PASSIVE;
 Choice c = MENU;
@@ -61,19 +63,27 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 
 void setup()
 {
-	Serial.begin(115200);
+	Serial.begin(9600);
 	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
 	pirSensor = new PIRSensor(25, millis());
-	user = new User(20, 21);
+	//user = new User(20, 21);
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
+
 	//Load user settings
-	// SDReader *sd = new SDReader(5, "/settings");
-	// if (sd->init())
-	// {
-	// 	sd->readSettings();
-	// 	delete (sd);
-	// }
+	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt");
+	if (sd->init())
+	{
+		std::vector<int> temps = sd->readSettings();
+		if(temps.size() == 2) {
+			user = new User(temps[0], temps[1]);
+		} else {
+			user = new User(20, 21);
+		}
+	} // add else incase init crashes!
+
+	//
+	reader = new Reader();
 
 	// initialise the screen
 	dht.begin();
@@ -152,9 +162,11 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 		}
 		else if (timeDiff(lastDebugTime, debugDelayValue))
 		{
-			Serial.print("Temperature sensor's current/latest value is " + String(currentAirTempReading) + "C.");
+			String currrentTempAsStr = String(currentAirTempReading);
+			Serial.print("Temperature sensor's current/latest value is " + currrentTempAsStr + "C.");
 			Serial.print(" The User is ");
 			Serial.println(user->getStatus() == UserState::PRESENT ? "Present." : "Absent.");
+			reader -> tick(currrentTempAsStr); // Temp is sent for processing
 
 			// change last changed time here to rest it
 			lastDebugTime = millis();
@@ -184,12 +196,12 @@ void checkButtonState()
 				if (c == MIN)
 				{
 					Serial.println("New min temperature set to: " + String(user->getMinTemp()) + "C.");
-					// writeSettings(user.getMinTemp(), user.getMaxTemp()); // save settings
+					sd->writeMinSettings(user->getMinTemp()); // overwrites min temp in settings file
 				}
 				else if (c == MAX)
 				{
 					Serial.println("New max temperature set to: " + String(user->getMaxTemp()) + "C.");
-					// writeSettings(user.getMinTemp(), user.getMaxTemp()); // save settings
+					sd->writeMaxSettings(user->getMaxTemp()); // overwrites max temp in settings file
 				}
 
 				oldMenuSelect = 0;
@@ -298,6 +310,12 @@ void loop()
 		int currentAirTempReading = dht.readTemperature();
 		checkButtonState();																											// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		display(currentAirTempReading);																					// #3
+		//add string to list
+		display(currentAirTempReading);																				// #3
 	}
 }
+
+// boolean timeDiff(unsigned long start, int specifiedDelay)
+// {
+// 	return (millis() - start >= specifiedDelay);
+// }

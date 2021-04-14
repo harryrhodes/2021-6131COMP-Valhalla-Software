@@ -5,11 +5,13 @@
 class Reader
 {
     private:
-    std::vector<std::string> list;
-    String time;
+    unsigned long lastWrite;
+    const unsigned long interval = 10000; // 120000 = 2 mins, 1000 = 1s
+    String currentValue;
 
     public:
-    void logRecordings(std::vector<std::string>);
-    String storeLog(String, std::vector<std::string>);
+    Reader();
+    void tick(String temp);
+    void writeChanges();
 };
 #endif
