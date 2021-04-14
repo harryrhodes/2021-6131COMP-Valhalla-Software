@@ -43,10 +43,11 @@ int currentAirTemp = 0;
 int oldMenuSelect = 0;
 int currentMenuSelect = 0;
 //setting sensor pins
-const int DHT_11_PIN = 26;
-
 unsigned long lastDebugTime;
-int delayValue = 5000;
+int debugDelayValue = 5000;
+unsigned long lastOrangeBlinkTime;
+boolean orangeBlink = true;
+int vacantDelayBlinkValue = 1000;
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -81,31 +82,52 @@ void setup()
 	tft.fillScreen(TFT_BLACK);
 }
 
-void handleTempChange(int temp)
+void handleTempChange(int temp, UserState pirReading)
 {
 	if (temp <= user->getMaxTemp() && temp >= user->getMinTemp())
 	{
 		d = PASSIVE;
-		led->setRGBValue(0, 255, 0);
+		if (pirReading == UserState::PRESENT)
+			led->setRGBValue(0, 255, 0);
 	}
 	else if (temp > user->getMaxTemp())
 	{
 		d = COOL;
-		led->setRGBValue(0, 0, 255);
+		if (pirReading == UserState::PRESENT)
+			led->setRGBValue(0, 0, 255);
 	}
 	else if (temp < user->getMinTemp())
 	{
 		d = HEAT;
-		led->setRGBValue(255, 0, 0);
+		if (pirReading == UserState::PRESENT)
+			led->setRGBValue(255, 0, 0);
+	}
+}
+
+void vacantBuldingBlink()
+{
+	if (timeDiff(lastOrangeBlinkTime, vacantDelayBlinkValue))
+	{
+		if (orangeBlink)
+		{
+			led->setRGBValue(0, 0, 0);
+			orangeBlink = false;
+		}
+		else
+		{
+			led->setRGBValue(255, 135, 0);
+			orangeBlink = true;
+		}
+		lastOrangeBlinkTime = millis();
 	}
 }
 
 void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 {
 	//temperature log
-	if (timeDiff(lastDebugTime, delayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
+	if (timeDiff(lastDebugTime, debugDelayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
 	{
-		handleTempChange(currentAirTempReading);
+		handleTempChange(currentAirTempReading, pirReading);
 
 		if (currentAirTempReading != currentAirTemp)
 		{
@@ -118,23 +140,30 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 				Serial.println("The Building state has changed to Occupied");
 				user->setStatus(UserState::PRESENT);
 			}
-			else
+			else if (pirReading == UserState::ABSENT)
 			{
 				Serial.println("The Building State has changed to Vacant");
 				user->setStatus(UserState::ABSENT);
 
 				led->setRGBValue(255, 135, 0);
+				lastOrangeBlinkTime = millis();
+				orangeBlink = true;
 			}
 		}
-		else if (timeDiff(lastDebugTime, delayValue))
+		else if (timeDiff(lastDebugTime, debugDelayValue))
 		{
 			Serial.print("Temperature sensor's current/latest value is " + String(currentAirTempReading) + "C.");
 			Serial.print(" The User is ");
-			Serial.println(user->getStatus() == UserState::PRESENT ? "Present" : "Absent");
+			Serial.println(user->getStatus() == UserState::PRESENT ? "Present." : "Absent.");
 
 			// change last changed time here to rest it
 			lastDebugTime = millis();
 		}
+	}
+
+	if (pirReading != UserState::PRESENT)
+	{
+		vacantBuldingBlink();
 	}
 }
 
@@ -217,23 +246,19 @@ void display(int currentAirTempReading)
 		tft.setTextColor(TFT_WHITE, TFT_BLACK);
 		if (user->getStatus() == UserState::PRESENT)
 		{
-			tft.println("User Status: Present");
-			tft.println("");
+			tft.println("User Is: Present");
 		};
 		if (user->getStatus() == UserState::ABSENT)
 		{
-			tft.println("User Status: Absent");
-			tft.println("");
+			tft.println("User Is: Absent  ");
 		};
 		if (!pirSensor->isReady())
 		{
 			tft.println("PIR Sensor Loading");
-			tft.println("");
 		}
 		else
 		{
-			tft.println("PIR Sensor Ready");
-			tft.println("");
+			tft.println("PIR Sensor Ready   ");
 		};
 		tft.print("Set Min Temp ");
 		if (currentMenuSelect == 1)
@@ -266,13 +291,13 @@ void loop()
 	if (!pirSensor->isReady())
 	{
 		pirSensor->warmUp();
-		led->setRGBValue(255, 135, 0);
+		vacantBuldingBlink();
 	}
 	else
 	{
 		int currentAirTempReading = dht.readTemperature();
-		checkButtonState();														// #1
+		checkButtonState();																											// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		display(currentAirTempReading);											// #3
+		display(currentAirTempReading);																					// #3
 	}
 }
