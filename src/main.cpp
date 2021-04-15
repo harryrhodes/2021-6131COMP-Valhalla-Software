@@ -9,14 +9,12 @@
 #include <SD_Reader.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
-// #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiType.h>
-// #include <Reading.h>
 #include <iostream>
 #include <vector>
-#include <Transmission.h>
+#include <Endpoint.h>
 
 enum Demand
 {
@@ -31,11 +29,12 @@ enum Choice
 	MIN,
 	MAX
 };
+// Null pointers for encapsulated system components
 
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
-Transmission *transmission = NULL;
+Endpoint *HTTPEndpoint = NULL;
 
 DHT dht(26, DHT11);
 Demand d = PASSIVE;
@@ -65,12 +64,14 @@ int transmissionDelayValue = 15000; // CHANGE TO 45000 BEFORE SUBMISSION
 std::vector<String> readings;
 
 //wi-fi settings
-const char *ssid = "Robert's iPhone";
-const char *password = "hello123";
+const char *ssid = "STOCKTON_STUDENTS";
+const char *password = "03301359065";
 boolean wifiConnected = false;
 
+//Display
 TFT_eSPI tft = TFT_eSPI();
 
+//Encoders
 Encoder encoderMenu(ROTARY_A, ROTARY_B, 2);
 Encoder encoderTemp(ROTARY_A, ROTARY_B, 40);
 
@@ -78,8 +79,6 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 {
 	return (millis() - start >= specifiedDelay);
 }
-
-// HTTPClient client;
 
 void setup()
 {
@@ -89,7 +88,7 @@ void setup()
 	user = new User(20, 21);
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
-	transmission = new Transmission();
+	HTTPEndpoint = new Endpoint("192.168.0.38", 4000);
 
 	//Load user settings
 	// SDReader *sd = new SDReader(5, "/settings");
@@ -339,7 +338,7 @@ void checkReadingsTransmission()
 {
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
-		if (transmission->sendReadings(readings))
+		if (HTTPEndpoint->sendReadings(readings))
 		{
 			readings.clear();
 		}

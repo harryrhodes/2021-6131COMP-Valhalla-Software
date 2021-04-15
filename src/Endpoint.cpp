@@ -1,4 +1,4 @@
-#include "Transmission.h"
+#include "Endpoint.h"
 #include <Arduino.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -6,16 +6,18 @@
 // #include "time.h"
 // #include <ctime>
 
-Transmission::Transmission()
+Endpoint::Endpoint(char *host, unsigned int port)
 {
+    //Constructor
+    this->host = host;
+    this->port = port;
 }
 
-bool Transmission::sendReadings(std::vector<String> readings)
+bool Endpoint::sendReadings(std::vector<String> readings)
 {
     //HTTP Client
     HTTPClient client;
-    client.begin("192.168.56.1", 4000); // change IP accordingly
-
+    client.begin(host, port); // change IP accordingly
     client.addHeader("Content-Type", "application/json");
 
     // add readings to the payload as an array
@@ -64,6 +66,6 @@ bool Transmission::sendReadings(std::vector<String> readings)
 //     return date_time;
 // }
 
-void Transmission::sendStatus()
+void Endpoint::sendStatus()
 {
 }
