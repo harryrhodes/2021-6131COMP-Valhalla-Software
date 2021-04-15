@@ -3,6 +3,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <vector>
+// #include "time.h"
+// #include <ctime>
 
 Transmission::Transmission()
 {
@@ -44,6 +46,16 @@ bool Transmission::sendReadings(std::vector<String> readings)
     {
         return false;
     }
+}
+
+String getTime()
+{
+    // current date and time on the current system
+    time_t now = time(0);
+    // convert now to string form
+    char *date_time = ctime(&now);
+
+    return date_time;
 }
 
 void Transmission::sendStatus()
