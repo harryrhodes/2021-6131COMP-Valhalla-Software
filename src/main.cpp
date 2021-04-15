@@ -81,6 +81,8 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 	return (millis() - start >= specifiedDelay);
 }
 
+HTTPClient client;
+
 void setup()
 {
 	Serial.begin(115200);
@@ -112,6 +114,12 @@ void setup()
 	lastDebugTime = millis();
 	lastVolatileReadingTime = millis();
 	lastTransmissionTime = millis();
+
+	//HTTP Client
+	// String url = ;
+	client.begin("192.168.0.38", 4000);
+
+	client.addHeader("Content-Type", "application/json");
 }
 
 void handleTempChange(int temp, UserState pirReading)
@@ -339,11 +347,6 @@ void handleHttpTransmission()
 {
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
-		HTTPClient client;
-		String url = "https://localhost:4000";
-		client.begin(url);
-
-		client.addHeader("Content-Type", "application/json");
 
 		// add readings to the payload as an array
 		StaticJsonDocument<200> doc;
