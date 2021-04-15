@@ -353,8 +353,7 @@ void loop()
 	{
 		wifiConnected = true;
 		Serial.println("Connected to the WiFi network.");
-		// initialise the time in UTC
-		configTime(0, 3600, "pool.ntp.org");
+		transmission->setTimeFromServer();
 	}
 
 	if (!pirSensor->isReady())

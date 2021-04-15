@@ -48,6 +48,12 @@ bool Transmission::sendReadings(std::vector<String> readings)
     }
 }
 
+void setTimeFromServer()
+{
+    // initialise the time in UTC
+    configTime(0, 3600, "pool.ntp.org");
+}
+
 String getTime()
 {
     // current date and time on the current system

@@ -7,6 +7,7 @@ class Transmission
 public:
     Transmission();
     bool sendReadings(std::vector<String> readings);
+    void setTimeFromServer();
     String getTime();
     void sendStatus();
 };
