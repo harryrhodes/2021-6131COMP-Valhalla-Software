@@ -2,10 +2,11 @@
 #include <Arduino.h>
 #include <SD.h>
 
-SDReader::SDReader(unsigned short chipSelect, char *file)
+SDReader::SDReader(unsigned short chipSelect, char *minSetting, char *maxSetting)
 {
   this->chipSelect = chipSelect;
-  this->file = file;
+  this->minSetting = minSetting;
+  this->maxSetting = maxSetting;
 }
 
 bool SDReader::init()
@@ -31,38 +32,54 @@ bool SDReader::init()
   return true;
 }
 
-String SDReader::readSettings()
+std::vector<int> SDReader::readSettings()
 {
-  File settings = SD.open(file);
-  if (settings)
-  {
-    while(settings.available()){
-      String line = settings.readStringUntil('/r');
-      line.trim();
-      if (line.length() > 0){
-        return line;
-      }
-    }
+	File min = SD.open(minSetting);
+	File max = SD.open(maxSetting);
+  std::vector<int> list;
+
+	if (min && max){
+    int minTemp = atoi(min.readStringUntil('\n').c_str());
+    int maxTemp = atoi(max.readStringUntil('\n').c_str());
+		Serial.println("SETTINGS READ SUCCESSFULLY: Your starting Max temp is: " + String(maxTemp) + "C. Starting Min temp is: " + String(minTemp) + "C.");	
+    list.push_back(minTemp);
+    list.push_back(maxTemp);
+    min.close();
+	  max.close();
   }
-  else
-  {
-    Serial.println("Settings files not found - default values will be loaded");
-    return "Empty"; 
-  }
-  settings.close();
+	else
+	{
+		Serial.println("Settings files not found - changing your min or max temp will build these files.");
+	}
+  return list;
 }
 
-void SDReader::writeSettings()
+void SDReader::writeMinSettings(int minTemp)
 {
-  File settings = SD.open(file, FILE_WRITE);
-  if (settings)
+  File min = SD.open(minSetting, FILE_WRITE);
+  if (min)
   {
-    settings.println("Some Data");
-    Serial.println("new temp saved to settings");
+    min.println(String(minTemp));
+    Serial.println("Min temp overridden");
+    min.close();
   }
   else
   {
-    Serial.println("Couldn't open the settings file to begin overwrite!");
+    Serial.println("Couldn't open the min settings file to begin overwrite!");
   }
-  settings.close();
+}
+
+void SDReader::writeMaxSettings(int maxTemp)
+{
+  File max = SD.open(maxSetting, FILE_WRITE);
+  if (max)
+  {
+    max.println(String(maxTemp));
+    Serial.println("Max temp overridden");
+    max.close();
+  }
+  else
+  {
+    Serial.println("Couldn't open the max settings file to begin overwrite!");
+  }
 }
