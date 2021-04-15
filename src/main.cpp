@@ -10,6 +10,12 @@
 #include <Reader.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiType.h>
+#include <iostream>
+#include <vector>
+#include <Endpoint.h>
 #include <Reader.h>
 
 enum Demand
@@ -25,10 +31,12 @@ enum Choice
 	MIN,
 	MAX
 };
+// Null pointers for encapsulated system components
 
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
+Endpoint *HTTPEndpoint = NULL;
 SDReader *sd = NULL;
 Reader *reader = NULL;
 DHT dht(26, DHT11); // this isn't an error its vsc being stupid
@@ -44,15 +52,29 @@ bool SDAvailable = false;
 int currentAirTemp = 0;
 int oldMenuSelect = 0;
 int currentMenuSelect = 0;
-//setting sensor pins
+
+// setting delay values
 unsigned long lastDebugTime;
 int debugDelayValue = 5000;
 unsigned long lastOrangeBlinkTime;
 boolean orangeBlink = true;
 int vacantDelayBlinkValue = 1000;
+unsigned long lastVolatileReadingTime;
+int volatileReadingDelayValue = 10000;
+unsigned long lastTransmissionTime;
+int transmissionDelayValue = 15000; // CHANGE TO 45000 BEFORE SUBMISSION
 
+std::vector<String> readings;
+
+//wi-fi settings
+const char *ssid = "STOCKTON_STUDENTS";
+const char *password = "03301359065";
+boolean wifiConnected = false;
+
+//Display
 TFT_eSPI tft = TFT_eSPI();
 
+//Encoders
 Encoder encoderMenu(ROTARY_A, ROTARY_B, 2);
 Encoder encoderTemp(ROTARY_A, ROTARY_B, 40);
 
@@ -68,6 +90,7 @@ void setup()
 	pirSensor = new PIRSensor(25, millis());
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
+	HTTPEndpoint = new Endpoint("192.168.0.38", 4000);
 
 	//Load user settings
 	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt");
@@ -93,6 +116,14 @@ void setup()
 	tft.init();
 	tft.setRotation(4);
 	tft.fillScreen(TFT_BLACK);
+
+	// connect to wi-fi
+	WiFi.begin(ssid, password);
+
+	// set timers
+	lastDebugTime = millis();
+	lastVolatileReadingTime = millis();
+	lastTransmissionTime = millis();
 }
 
 void handleTempChange(int temp, UserState pirReading)
@@ -138,7 +169,7 @@ void vacantBuldingBlink()
 void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 {
 	//temperature log
-	if (timeDiff(lastDebugTime, debugDelayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
+	if (timeDiff(lastDebugTime, debugDelayValue) || timeDiff(lastVolatileReadingTime, volatileReadingDelayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
 	{
 		handleTempChange(currentAirTempReading, pirReading);
 
@@ -146,7 +177,8 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 		{
 			Serial.println("New air temperature: " + String(currentAirTempReading) + "C.");
 		}
-		else if (pirReading != user->getStatus())
+
+		if (pirReading != user->getStatus())
 		{
 			if (pirReading == UserState::PRESENT)
 			{
@@ -163,16 +195,35 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 				orangeBlink = true;
 			}
 		}
-		else if (timeDiff(lastDebugTime, debugDelayValue))
+
+		// 5 second debug console
+		if (timeDiff(lastDebugTime, debugDelayValue))
 		{
 			String currrentTempAsStr = String(currentAirTempReading);
 			Serial.print("Temperature sensor's current/latest value is " + currrentTempAsStr + "C.");
 			Serial.print(" The User is ");
 			Serial.println(user->getStatus() == UserState::PRESENT ? "Present." : "Absent.");
+			
+			// reset timer
 			reader -> tick(currrentTempAsStr); // Temp is sent for processing
 
 			// change last changed time here to rest it
 			lastDebugTime = millis();
+		}
+
+		// store readings in volatile memory every 10 seconds
+		if (timeDiff(lastVolatileReadingTime, volatileReadingDelayValue))
+		{
+			// current date and time on the current system
+			time_t now = time(0);
+			// convert now to string form
+			char *date_time = ctime(&now);
+
+			String reading = "Date: " + String(date_time) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
+			readings.push_back(reading);
+			Serial.println(readings.size());
+			// reset timer
+			lastVolatileReadingTime = millis();
 		}
 	}
 
@@ -301,8 +352,33 @@ void display(int currentAirTempReading)
 	}
 }
 
+void checkReadingsTransmission()
+{
+	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
+	{
+		if (HTTPEndpoint->sendReadings(readings))
+		{
+			readings.clear();
+		}
+		else
+		{
+			Serial.println("Failed to send the readings to the server.");
+		}
+		// reset timer
+		lastTransmissionTime = millis();
+	}
+}
+
 void loop()
 {
+	if (WiFi.status() == WL_CONNECTED && !wifiConnected)
+	{
+		wifiConnected = true;
+		Serial.println("Connected to the WiFi network.");
+		// transmission->setTimeFromServer();
+		configTime(0, 3600, "pool.ntp.org");
+	}
+
 	if (!pirSensor->isReady())
 	{
 		pirSensor->warmUp();
@@ -311,14 +387,9 @@ void loop()
 	else
 	{
 		int currentAirTempReading = dht.readTemperature();
-		checkButtonState();																											// #1
+		checkButtonState();														// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		//add string to list
-		display(currentAirTempReading);																				// #3
+		display(currentAirTempReading);											// #3
+		checkReadingsTransmission();											// #4
 	}
 }
-
-// boolean timeDiff(unsigned long start, int specifiedDelay)
-// {
-// 	return (millis() - start >= specifiedDelay);
-// }
