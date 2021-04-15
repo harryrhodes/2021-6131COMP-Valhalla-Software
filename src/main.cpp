@@ -114,12 +114,6 @@ void setup()
 	lastDebugTime = millis();
 	lastVolatileReadingTime = millis();
 	lastTransmissionTime = millis();
-
-	//HTTP Client
-	// String url = ;
-	client.begin("192.168.0.38", 4000);
-
-	client.addHeader("Content-Type", "application/json");
 }
 
 void handleTempChange(int temp, UserState pirReading)
@@ -347,6 +341,10 @@ void handleHttpTransmission()
 {
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
+		//HTTP Client
+		client.begin("192.168.56.1", 4000); // change IP accordingly
+
+		client.addHeader("Content-Type", "application/json");
 
 		// add readings to the payload as an array
 		StaticJsonDocument<200> doc;
@@ -359,6 +357,7 @@ void handleHttpTransmission()
 
 		String requestBody;
 		serializeJson(doc, requestBody);
+
 		int httpResponseCode = client.POST(requestBody);
 
 		// check the response
