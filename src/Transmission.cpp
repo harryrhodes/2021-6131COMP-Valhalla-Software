@@ -48,21 +48,21 @@ bool Transmission::sendReadings(std::vector<String> readings)
     }
 }
 
-void setTimeFromServer()
-{
-    // initialise the time in UTC
-    configTime(0, 3600, "pool.ntp.org");
-}
+// void setTimeFromServer()
+// {
+//     // initialise the time in UTC
+//     configTime(0, 3600, "pool.ntp.org");
+// }
 
-char *getTime()
-{
-    // current date and time on the current system
-    time_t now = time(0);
-    // convert now to string form
-    char *date_time = ctime(&now);
+// char *getTime()
+// {
+//     // current date and time on the current system
+//     time_t now = time(0);
+//     // convert now to string form
+//     char *date_time = ctime(&now);
 
-    return date_time;
-}
+//     return date_time;
+// }
 
 void Transmission::sendStatus()
 {

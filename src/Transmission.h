@@ -9,8 +9,8 @@ class Transmission
 public:
     Transmission();
     bool sendReadings(std::vector<String> readings);
-    void setTimeFromServer();
-    char *getTime();
+    // void setTimeFromServer();
+    // char *getTime();
     void sendStatus();
 };
 #endif

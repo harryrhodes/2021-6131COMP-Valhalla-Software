@@ -197,7 +197,12 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 		// store readings in volatile memory every 10 seconds
 		if (timeDiff(lastVolatileReadingTime, volatileReadingDelayValue))
 		{
-			String reading = "Date: " + String(transmission->getTime()) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
+			// current date and time on the current system
+			time_t now = time(0);
+			// convert now to string form
+			char *date_time = ctime(&now);
+
+			String reading = "Date: " + String(date_time) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
 			readings.push_back(reading);
 			Serial.println(readings.size());
 			// reset timer
@@ -353,7 +358,8 @@ void loop()
 	{
 		wifiConnected = true;
 		Serial.println("Connected to the WiFi network.");
-		transmission->setTimeFromServer();
+		// transmission->setTimeFromServer();
+		configTime(0, 3600, "pool.ntp.org");
 	}
 
 	if (!pirSensor->isReady())
