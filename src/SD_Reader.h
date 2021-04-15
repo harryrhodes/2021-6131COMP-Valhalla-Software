@@ -15,7 +15,5 @@ public:
   std::vector<int> readSettings();
   void writeMinSettings(int minTemp);
   void writeMaxSettings(int maxTemp);
-  void writeMinvalue(unsigned short v);
-  void writeDebugLog(char, int currentTime);
 };
 #endif
