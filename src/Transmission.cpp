@@ -54,7 +54,7 @@ void setTimeFromServer()
     configTime(0, 3600, "pool.ntp.org");
 }
 
-String getTime()
+char *getTime()
 {
     // current date and time on the current system
     time_t now = time(0);
