@@ -9,7 +9,7 @@
 #include <SD_Reader.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
-#include <HTTPClient.h>
+// #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiType.h>
@@ -18,7 +18,7 @@
 #include <iostream>
 #include <vector>
 #include "time.h"
-#include <ArduinoJson.h>
+#include <Transmission.h>
 
 enum Demand
 {
@@ -37,7 +37,7 @@ enum Choice
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
-// Reading *readings = NULL;
+Transmission *transmission = NULL;
 
 DHT dht(26, DHT11);
 Demand d = PASSIVE;
@@ -81,7 +81,7 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 	return (millis() - start >= specifiedDelay);
 }
 
-HTTPClient client;
+// HTTPClient client;
 
 void setup()
 {
@@ -91,7 +91,7 @@ void setup()
 	user = new User(20, 21);
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
-	// readings = new Reading();
+	transmission = new Transmission();
 
 	//Load user settings
 	// SDReader *sd = new SDReader(5, "/settings");
@@ -337,39 +337,13 @@ void display(int currentAirTempReading)
 	}
 }
 
-void handleHttpTransmission()
+void checkReadingsTransmission()
 {
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
-		//HTTP Client
-		client.begin("192.168.56.1", 4000); // change IP accordingly
-
-		client.addHeader("Content-Type", "application/json");
-
-		// add readings to the payload as an array
-		StaticJsonDocument<200> doc;
-		JsonArray data = doc.createNestedArray("data");
-
-		for (int i = 0; i < readings.size(); i++)
+		if (transmission->sendReadings(readings))
 		{
-			data.add(readings[i]);
-		}
-
-		String requestBody;
-		serializeJson(doc, requestBody);
-
-		int httpResponseCode = client.POST(requestBody);
-
-		// check the response
-		if (httpResponseCode > 0)
-		{
-			String response = client.getString();
-			Serial.println(httpResponseCode);
-			// if successful clear the memory
-			if (httpResponseCode == 200)
-			{
-				readings.clear();
-			}
+			readings.clear();
 		}
 		else
 		{
@@ -401,6 +375,6 @@ void loop()
 		checkButtonState();														// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
 		display(currentAirTempReading);											// #3
-		handleHttpTransmission();												// #4
+		checkReadingsTransmission();											// #4
 	}
 }
