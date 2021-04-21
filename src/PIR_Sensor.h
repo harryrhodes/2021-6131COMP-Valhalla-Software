@@ -7,7 +7,7 @@ private:
   unsigned short pin;
   unsigned short initTime;
   unsigned short warmUpTime = 15000;
-  unsigned short timeout = 2000; // CHANGE THIS TO 10 MINUTES BEFORE SUBMISSION!!!
+  int timeout = 5000; // CHANGE THIS TO 10 MINUTES BEFORE SUBMISSION!!! - 600000
   unsigned short lastMotionTime;
   bool ready = false;
 
