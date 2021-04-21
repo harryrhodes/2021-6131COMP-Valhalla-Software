@@ -138,7 +138,6 @@ void handleTempChange(int temp, UserState pirReading)
 		if (pirReading == UserState::PRESENT)
 		{
 			led->setRGBValue(0, 255, 0);
-			Serial.println("Status: GREEN - User is present and temperature is between " + String(user->getMinTemp() + "C and " + String(user->getMaxTemp() + "C.")));
 		}
 	}
 	else if (temp > user->getMaxTemp())
@@ -147,7 +146,6 @@ void handleTempChange(int temp, UserState pirReading)
 		if (pirReading == UserState::PRESENT)
 		{
 			led->setRGBValue(0, 0, 255);
-			Serial.println("Status: BLUE - User is present and temperature is above max temp " + String(user->getMaxTemp() + "C."));
 		}
 	}
 	else if (temp < user->getMinTemp())
@@ -156,7 +154,6 @@ void handleTempChange(int temp, UserState pirReading)
 		if (pirReading == UserState::PRESENT)
 		{
 			led->setRGBValue(255, 0, 0);
-			Serial.println("Status: RED - User is present and temperature is below min temp " + String(user->getMinTemp() + "C."));
 		}
 	}
 }
@@ -197,11 +194,25 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 			{
 				Serial.println("The Building state has changed to Occupied");
 				user->setStatus(UserState::PRESENT);
+				if (d == PASSIVE)
+				{
+					Serial.println("Status: GREEN - User is present and temperature is between min " + String(user->getMinTemp()) + "C and max " + String(user->getMaxTemp()) + "C.");
+				}
+				else if (d == HEAT)
+				{
+					Serial.println("Status: RED - User is present and temperature is below min temp " + String(user->getMinTemp()) + "C.");
+				}
+				else if (d == COOL)
+				{
+					Serial.println("Status: BLUE - User is present and temperature is above max temp " + String(user->getMaxTemp()) + "C.");
+				}
 			}
 			else if (pirReading == UserState::ABSENT)
 			{
 				Serial.println("The Building State has changed to Vacant");
 				user->setStatus(UserState::ABSENT);
+
+				Serial.println("Status: ORANGE - User is absent.");
 
 				led->setRGBValue(255, 135, 0);
 				lastOrangeBlinkTime = millis();
