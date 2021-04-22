@@ -67,8 +67,8 @@ int transmissionDelayValue = 100000; // CHANGE TO 45000 BEFORE SUBMISSION
 std::vector<String> readings;
 
 //wi-fi settings
-const char *ssid = "Robert's iPhone";
-const char *password = "hello123";
+const char *ssid = "STOCKTON_STUDENTS";
+const char *password = "03301359065";
 boolean wifiConnected = false;
 
 //Display
@@ -86,6 +86,8 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 void setup()
 {
 	Serial.begin(115200);
+	// connect to wi-fi
+	WiFi.begin(ssid, password);
 	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
 	pirSensor = new PIRSensor(25, millis());
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
@@ -121,13 +123,15 @@ void setup()
 	tft.setRotation(4);
 	tft.fillScreen(TFT_BLACK);
 
-	// connect to wi-fi
-	WiFi.begin(ssid, password);
-
 	// set timers
 	lastDebugTime = millis();
 	lastVolatileReadingTime = millis();
 	lastTransmissionTime = millis();
+
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		HTTPEndpoint->getUpdate();
+	}
 }
 
 void handleTempChange(int temp, UserState pirReading)
@@ -378,6 +382,7 @@ void display(int currentAirTempReading)
 
 void checkReadingsTransmission()
 {
+	HTTPEndpoint->setHost("192.168.0.38");
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
 		if (HTTPEndpoint->sendReadings(readings))

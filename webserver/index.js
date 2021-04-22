@@ -1,28 +1,34 @@
 const express = require("express");
 const fs = require("fs");
+const path = require("path");
 const app = express();
 app.use(express.json()); // to support JSON-encoded bodies
 // app.use(express.urlencoded()); // to support URL-encoded bodies
 
 app.get("/", (req, res) => {
-    console.log("Got a get");
-    res.sendStatus(200);
+  const file = path.resolve("public", "v6.0.bin");
+  res.download(file); //Return Target File
+});
+
+app.get("/esp-update", (req, res) => {
+  const file = path.resolve("public", "v6.0.bin");
+  res.download(file).sendStatus(200); //Return Target File
 });
 
 app.post("/", (req, res) => {
-    // console.log("Got body:", req.body);
+  // console.log("Got body:", req.body);
 
-    const logger = fs.createWriteStream("log.txt", {
-        flags: "a", // 'a' means appending (old data will be preserved)
-    });
+  const logger = fs.createWriteStream("log.txt", {
+    flags: "a", // 'a' means appending (old data will be preserved)
+  });
 
-    // console.log(req.body.data)
+  // console.log(req.body.data)
 
-    for (let reading of req.body.data) {
-        logger.write(`${reading.split('\n')[0]}, ${reading.split('\n')[1]}\n`); // add the string to the file
-    }
-    logger.end(); // close string logger
-    res.sendStatus(200);
+  for (let reading of req.body.data) {
+    logger.write(`${reading.split("\n")[0]}, ${reading.split("\n")[1]}\n`); // add the string to the file
+  }
+  logger.end(); // close string logger
+  res.sendStatus(200);
 });
 
 app.listen(4000, () => console.log(`Started server at port 4000!`));
