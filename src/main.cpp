@@ -62,13 +62,13 @@ int vacantDelayBlinkValue = 1000;
 unsigned long lastVolatileReadingTime;
 int volatileReadingDelayValue = 10000;
 unsigned long lastTransmissionTime;
-int transmissionDelayValue = 15000; // CHANGE TO 45000 BEFORE SUBMISSION
+int transmissionDelayValue = 100000; // CHANGE TO 45000 BEFORE SUBMISSION
 
 std::vector<String> readings;
 
 //wi-fi settings
-const char *ssid = "STOCKTON_STUDENTS";
-const char *password = "03301359065";
+const char *ssid = "Robert's iPhone";
+const char *password = "hello123";
 boolean wifiConnected = false;
 
 //Display
@@ -97,13 +97,17 @@ void setup()
 	if (sd->init())
 	{
 		std::vector<int> temps = sd->readSettings();
-		if(temps.size() == 2) {
+		if (temps.size() == 2)
+		{
 			user = new User(temps[0], temps[1]);
-		} else {
+		}
+		else
+		{
 			user = new User(20, 21);
 		}
 	} // add else incase init crashes!
-	else {
+	else
+	{
 		Serial.println("ERROR: Couldn't get settings! Defaulting to default values");
 		user = new User(20, 21);
 	}
@@ -132,19 +136,25 @@ void handleTempChange(int temp, UserState pirReading)
 	{
 		d = PASSIVE;
 		if (pirReading == UserState::PRESENT)
+		{
 			led->setRGBValue(0, 255, 0);
+		}
 	}
 	else if (temp > user->getMaxTemp())
 	{
 		d = COOL;
 		if (pirReading == UserState::PRESENT)
+		{
 			led->setRGBValue(0, 0, 255);
+		}
 	}
 	else if (temp < user->getMinTemp())
 	{
 		d = HEAT;
 		if (pirReading == UserState::PRESENT)
+		{
 			led->setRGBValue(255, 0, 0);
+		}
 	}
 }
 
@@ -185,11 +195,25 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 			{
 				Serial.println("The Building state has changed to Occupied");
 				user->setStatus(UserState::PRESENT);
+				if (d == PASSIVE)
+				{
+					Serial.println("Status: GREEN - User is present and temperature is between min " + String(user->getMinTemp()) + "C and max " + String(user->getMaxTemp()) + "C.");
+				}
+				else if (d == HEAT)
+				{
+					Serial.println("Status: RED - User is present and temperature is below min temp " + String(user->getMinTemp()) + "C.");
+				}
+				else if (d == COOL)
+				{
+					Serial.println("Status: BLUE - User is present and temperature is above max temp " + String(user->getMaxTemp()) + "C.");
+				}
 			}
 			else if (pirReading == UserState::ABSENT)
 			{
 				Serial.println("The Building State has changed to Vacant");
 				user->setStatus(UserState::ABSENT);
+
+				Serial.println("Status: ORANGE - User is absent.");
 
 				led->setRGBValue(255, 135, 0);
 				lastOrangeBlinkTime = millis();
@@ -218,17 +242,17 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 
 			String reading = "Date: " + String(date_time) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
 			readings.push_back(reading);
-
+      
 			// reset timer
 			reader -> tick(reading, String(date_time)); // Temp is sent for processing
 
-			Serial.println(readings.size());
+			Serial.println(readings.size());  
 			// reset timer
 			lastVolatileReadingTime = millis();
 		}
 	}
 
-	if (pirReading != UserState::PRESENT)
+	if (user->getStatus() != UserState::PRESENT)
 	{
 		vacantBuldingBlink();
 	}
