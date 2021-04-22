@@ -11,7 +11,7 @@ class Reader
 
     public:
     Reader();
-    void tick(String temp);
-    void writeChanges();
+    void tick(String temp, String date_time);
+    void writeChanges(String date_time);
 };
 #endif
