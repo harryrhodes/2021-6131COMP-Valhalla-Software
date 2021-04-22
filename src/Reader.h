@@ -6,12 +6,12 @@ class Reader
 {
     private:
     unsigned long lastWrite;
-    const unsigned long interval = 120000; // 120000 = 2 mins, 1000 = 1s CHANGE ME TO LOWER WAIT TIME
+    const unsigned long interval = 40000; // 120000 = 2 mins, 1000 = 1s CHANGE ME TO LOWER WAIT TIME
     String currentValue;
 
     public:
     Reader();
-    void tick(String temp);
-    void writeChanges();
+    void tick(String temp, String date_time);
+    void writeChanges(String date_time);
 };
 #endif
