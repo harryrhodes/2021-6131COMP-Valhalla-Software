@@ -3,7 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const app = express();
 app.use(express.json()); // to support JSON-encoded bodies
-// app.use(express.urlencoded()); // to support URL-encoded bodies
+
+const sysVersion = "6.0";
 
 app.get("/", (req, res) => {
   console.log("Hello From /");
@@ -11,11 +12,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/version-check", (req, res) => {
-  res.send("v6.0");
+  res.status(200).send(sysVersion);
 });
 
 app.get("/esp-update", (req, res) => {
-  const file = path.resolve("public", "v6.0.bin");
+  const file = path.resolve("public", "v" + sysVersion + ".bin");
   res.download(file); //Return Target File
 });
 

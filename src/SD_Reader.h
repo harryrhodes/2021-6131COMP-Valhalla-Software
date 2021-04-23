@@ -16,7 +16,7 @@ public:
   std::vector<int> readSettings();
   void writeMinSettings(int minTemp);
   void writeMaxSettings(int maxTemp);
-  String readVersion();
-  void writeVersion(String version);
+  float readVersion();
+  void writeVersion(float version);
 };
 #endif

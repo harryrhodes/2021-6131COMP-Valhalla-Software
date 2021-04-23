@@ -33,7 +33,7 @@ enum Choice
 };
 
 //System Version
-String sysVersion;
+float sysVersion;
 // Null pointers for encapsulated system components
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
@@ -134,8 +134,8 @@ void setup()
 
 	if (WiFi.status() == WL_CONNECTED)
 	{
-		String latestVersion = HTTPEndpoint->getVersion();
-		if (sysVersion == latestVersion)
+		float latestVersion = HTTPEndpoint->getVersion();
+		if (sysVersion < latestVersion)
 		{
 			Serial.println("Latest Version Already Applied!");
 		}

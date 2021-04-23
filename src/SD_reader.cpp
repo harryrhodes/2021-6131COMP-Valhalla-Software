@@ -86,14 +86,14 @@ void SDReader::writeMaxSettings(int maxTemp)
   }
 }
 
-String SDReader::readVersion()
+float SDReader::readVersion()
 {
   File ver = SD.open(versionSetting);
-  String version;
+  float version;
   if (ver)
   {
-    version = ver.readStringUntil('\n');
-    Serial.println("Version Read: " + version);
+    version = ver.readStringUntil('\n').toFloat();
+    Serial.println("Version Read: " + String(version));
     ver.close();
   }
   else
@@ -103,7 +103,7 @@ String SDReader::readVersion()
   return version;
 }
 
-void SDReader::writeVersion(String version)
+void SDReader::writeVersion(float version)
 {
   File ver = SD.open(versionSetting, FILE_WRITE);
   if (ver)
