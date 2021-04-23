@@ -33,7 +33,7 @@ enum Choice
 };
 
 //System Version
-float sysVersion;
+float sysVersion = 0;
 // Null pointers for encapsulated system components
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
@@ -135,16 +135,16 @@ void setup()
 	if (WiFi.status() == WL_CONNECTED)
 	{
 		float latestVersion = HTTPEndpoint->getVersion();
-		if (sysVersion < latestVersion)
-		{
-			Serial.println("Latest Version Already Applied!");
-		}
-		else
+		if (latestVersion > sysVersion)
 		{
 			sysVersion = latestVersion;
 			sd->writeVersion(sysVersion);
 			HTTPEndpoint->setHost("http://192.168.0.38/esp-update");
 			HTTPEndpoint->getUpdate();
+		}
+		else
+		{
+			Serial.println("Latest Version Already Applied!");
 		}
 	}
 	else
@@ -401,7 +401,7 @@ void display(int currentAirTempReading)
 
 void checkReadingsTransmission()
 {
-	HTTPEndpoint->setHost("192.168.0.38");
+	HTTPEndpoint->setHost("http://192.168.0.38/logs");
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
 		if (HTTPEndpoint->sendReadings(readings))

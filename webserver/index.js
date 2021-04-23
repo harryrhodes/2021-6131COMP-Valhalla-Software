@@ -4,7 +4,8 @@ const path = require("path");
 const app = express();
 app.use(express.json()); // to support JSON-encoded bodies
 
-const sysVersion = "6.0";
+const sysVersion = "7.0";
+const fileName = "v" + sysVersion + ".bin";
 
 app.get("/", (req, res) => {
   console.log("Hello From /");
@@ -16,11 +17,11 @@ app.get("/version-check", (req, res) => {
 });
 
 app.get("/esp-update", (req, res) => {
-  const file = path.resolve("public", "v" + sysVersion + ".bin");
+  const file = path.resolve("public", fileName);
   res.download(file); //Return Target File
 });
 
-app.post("/", (req, res) => {
+app.post("/logs", (req, res) => {
   const logger = fs.createWriteStream("log.txt", {
     flags: "a", // 'a' means appending (old data will be preserved)
   });
