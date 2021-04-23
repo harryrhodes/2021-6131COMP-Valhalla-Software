@@ -8,10 +8,9 @@ class Endpoint
 {
 private:
     char *host;
-    unsigned int port;
 
 public:
-    Endpoint(char *host, unsigned int port);
+    Endpoint(char *host);
     void setHost(char *host);
     bool sendReadings(std::vector<String> readings);
     void sendStatus();

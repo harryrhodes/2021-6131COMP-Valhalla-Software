@@ -5,11 +5,10 @@
 #include <vector>
 #include <Update.h>
 
-Endpoint::Endpoint(char *host, unsigned int port)
+Endpoint::Endpoint(char *host)
 {
     //Constructor
     this->host = host;
-    this->port = port;
 }
 
 void Endpoint::setHost(char *host)
@@ -20,7 +19,7 @@ void Endpoint::setHost(char *host)
 bool Endpoint::sendReadings(std::vector<String> readings)
 {
     HTTPClient client;
-    client.begin(host, port);
+    client.begin(host);
     client.addHeader("Content-Type", "application/json");
     // add readings to the payload as an array
     StaticJsonDocument<200> doc;
@@ -60,7 +59,7 @@ void Endpoint::sendStatus()
 void Endpoint::getUpdate()
 {
     HTTPClient client;
-    client.begin(host, port);
+    client.begin(host);
     int retCode = client.GET();
 
     if (retCode > 0)

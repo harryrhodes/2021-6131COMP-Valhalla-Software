@@ -92,7 +92,7 @@ void setup()
 	pirSensor = new PIRSensor(25, millis());
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
-	HTTPEndpoint = new Endpoint("192.168.0.38", 4000);
+	HTTPEndpoint = new Endpoint("http://192.168.0.38/esp-update");
 
 	//Load user settings
 	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt");

@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
 
 app.get("/esp-update", (req, res) => {
   const file = path.resolve("public", "v6.0.bin");
-  res.download(file).sendStatus(200); //Return Target File
+  res.download(file); //Return Target File
 });
 
 app.post("/", (req, res) => {
@@ -31,6 +31,6 @@ app.post("/", (req, res) => {
   res.sendStatus(200);
 });
 
-app.listen(4000, () => console.log(`Started server at port 4000!`));
+app.listen(80, () => console.log(`Started server at port 80!`));
 
 // TO START LOCALLY RUN npm install then npm start
