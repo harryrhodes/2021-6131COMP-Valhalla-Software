@@ -31,8 +31,10 @@ enum Choice
 	MIN,
 	MAX
 };
-// Null pointers for encapsulated system components
 
+//System Version
+String sysVersion;
+// Null pointers for encapsulated system components
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
@@ -92,13 +94,15 @@ void setup()
 	pirSensor = new PIRSensor(25, millis());
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
-	HTTPEndpoint = new Endpoint("http://192.168.0.38/esp-update");
+	HTTPEndpoint = new Endpoint("http://192.168.0.38/version-check");
 
 	//Load user settings
-	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt");
+	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt", "/version.txt");
 	if (sd->init())
 	{
-		std::vector<int> temps = sd->readSettings();
+		sysVersion = sd->readVersion();
+		std::vector<int>
+			temps = sd->readSettings();
 		if (temps.size() == 2)
 		{
 			user = new User(temps[0], temps[1]);
@@ -130,7 +134,22 @@ void setup()
 
 	if (WiFi.status() == WL_CONNECTED)
 	{
-		HTTPEndpoint->getUpdate();
+		String latestVersion = HTTPEndpoint->getVersion();
+		if (sysVersion == latestVersion)
+		{
+			Serial.println("Latest Version Already Applied!");
+		}
+		else
+		{
+			sysVersion = latestVersion;
+			sd->writeVersion(sysVersion);
+			HTTPEndpoint->setHost("http://192.168.0.38/esp-update");
+			HTTPEndpoint->getUpdate();
+		}
+	}
+	else
+	{
+		Serial.println("ERROR: No WiFi. Update Check Not Performed");
 	}
 }
 

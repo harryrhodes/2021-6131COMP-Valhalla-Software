@@ -14,6 +14,7 @@ public:
     void setHost(char *host);
     bool sendReadings(std::vector<String> readings);
     void sendStatus();
+    String getVersion();
     void getUpdate();
 };
 #endif

@@ -6,8 +6,12 @@ app.use(express.json()); // to support JSON-encoded bodies
 // app.use(express.urlencoded()); // to support URL-encoded bodies
 
 app.get("/", (req, res) => {
-  const file = path.resolve("public", "v6.0.bin");
-  res.download(file); //Return Target File
+  console.log("Hello From /");
+  res.sendStatus(200);
+});
+
+app.get("/version-check", (req, res) => {
+  res.send("v6.0");
 });
 
 app.get("/esp-update", (req, res) => {
@@ -16,13 +20,9 @@ app.get("/esp-update", (req, res) => {
 });
 
 app.post("/", (req, res) => {
-  // console.log("Got body:", req.body);
-
   const logger = fs.createWriteStream("log.txt", {
     flags: "a", // 'a' means appending (old data will be preserved)
   });
-
-  // console.log(req.body.data)
 
   for (let reading of req.body.data) {
     logger.write(`${reading.split("\n")[0]}, ${reading.split("\n")[1]}\n`); // add the string to the file

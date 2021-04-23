@@ -56,6 +56,31 @@ void Endpoint::sendStatus()
     // TODO: System health update for non-functional reliability testing
 }
 
+String Endpoint::getVersion()
+{
+    HTTPClient client;
+    client.begin(host);
+    int retCode = client.GET();
+
+    if (retCode > 0)
+    { //a real HTTP code
+        Serial.print("HTTP " + String(retCode));
+        if (retCode == HTTP_CODE_OK)
+        {
+            int contentLength = client.getSize();
+            if (contentLength > 0)
+            {
+                return client.getString();
+            }
+        }
+    }
+    else
+    {
+        Serial.println("Error... ");
+        Serial.println(HTTPClient::errorToString(retCode));
+    }
+}
+
 void Endpoint::getUpdate()
 {
     HTTPClient client;

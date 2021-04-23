@@ -8,12 +8,15 @@ private:
   unsigned short chipSelect;
   char *minSetting;
   char *maxSetting;
+  char *versionSetting;
 
 public:
-  SDReader(unsigned short pin, char *minSetting, char *maxSetting);
+  SDReader(unsigned short pin, char *minSetting, char *maxSetting, char *versionSetting);
   bool init();
   std::vector<int> readSettings();
   void writeMinSettings(int minTemp);
   void writeMaxSettings(int maxTemp);
+  String readVersion();
+  void writeVersion(String version);
 };
 #endif
