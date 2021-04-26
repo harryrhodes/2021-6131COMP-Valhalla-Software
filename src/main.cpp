@@ -205,6 +205,7 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 	if (timeDiff(lastDebugTime, debugDelayValue) || timeDiff(lastVolatileReadingTime, volatileReadingDelayValue) || currentAirTempReading != currentAirTemp || pirReading != user->getStatus())
 	{
 		handleTempChange(currentAirTempReading, pirReading);
+		String currrentTempAsStr = String(currentAirTempReading);
 
 		if (currentAirTempReading != currentAirTemp)
 		{
@@ -246,13 +247,9 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 		// 5 second debug console
 		if (timeDiff(lastDebugTime, debugDelayValue))
 		{
-			String currrentTempAsStr = String(currentAirTempReading);
 			Serial.print("Temperature sensor's current/latest value is " + currrentTempAsStr + "C.");
 			Serial.print(" The User is ");
 			Serial.println(user->getStatus() == UserState::PRESENT ? "Present." : "Absent.");
-
-			// reset timer
-			reader->tick(currrentTempAsStr); // Temp is sent for processing
 
 			// change last changed time here to rest it
 			lastDebugTime = millis();
@@ -268,7 +265,11 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 
 			String reading = "Date: " + String(date_time) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
 			readings.push_back(reading);
-			// Serial.println(readings.size());
+      
+			// reset timer
+			reader -> tick(reading, String(date_time)); // Temp is sent for processing
+
+			Serial.println(readings.size());  
 			// reset timer
 			lastVolatileReadingTime = millis();
 		}
