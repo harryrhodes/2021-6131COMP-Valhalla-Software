@@ -3,18 +3,18 @@
 #include <vector>
 #include <iostream>
 #include <Arduino.h>
-
+#include <HTTPClient.h>
 class Endpoint
 {
 private:
     char *host;
-    unsigned int port;
 
 public:
-    Endpoint(char *host, unsigned int port);
+    Endpoint(char *host);
+    void setHost(char *host);
     bool sendReadings(std::vector<String> readings);
-    void setTimeFromServer();
-    char *getTime();
     void sendStatus();
+    float getVersion();
+    void getUpdate();
 };
 #endif

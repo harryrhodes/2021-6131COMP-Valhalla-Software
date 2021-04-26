@@ -31,8 +31,10 @@ enum Choice
 	MIN,
 	MAX
 };
-// Null pointers for encapsulated system components
 
+//System Version
+float sysVersion = 0;
+// Null pointers for encapsulated system components
 PIRSensor *pirSensor = NULL;
 User *user = NULL;
 RGBLed *led = NULL;
@@ -67,8 +69,8 @@ int transmissionDelayValue = 100000; // CHANGE TO 45000 BEFORE SUBMISSION
 std::vector<String> readings;
 
 //wi-fi settings
-const char *ssid = "Robert's iPhone";
-const char *password = "hello123";
+const char *ssid = "STOCKTON_STUDENTS";
+const char *password = "03301359065";
 boolean wifiConnected = false;
 
 //Display
@@ -86,17 +88,21 @@ boolean timeDiff(unsigned long start, int specifiedDelay)
 void setup()
 {
 	Serial.begin(115200);
-	pinMode(ROTARY_BUTTON, INPUT_PULLUP);	
+	// connect to wi-fi
+	WiFi.begin(ssid, password);
+	pinMode(ROTARY_BUTTON, INPUT_PULLUP);
 	pirSensor = new PIRSensor(25, millis());
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
-	HTTPEndpoint = new Endpoint("192.168.0.38", 4000);
+	HTTPEndpoint = new Endpoint("http://192.168.0.38/version-check");
 
 	//Load user settings
-	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt");
+	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt", "/version.txt");
 	if (sd->init())
 	{
-		std::vector<int> temps = sd->readSettings();
+		sysVersion = sd->readVersion();
+		std::vector<int>
+			temps = sd->readSettings();
 		if (temps.size() == 2)
 		{
 			user = new User(temps[0], temps[1]);
@@ -121,13 +127,30 @@ void setup()
 	tft.setRotation(4);
 	tft.fillScreen(TFT_BLACK);
 
-	// connect to wi-fi
-	WiFi.begin(ssid, password);
-
 	// set timers
 	lastDebugTime = millis();
 	lastVolatileReadingTime = millis();
 	lastTransmissionTime = millis();
+
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		float latestVersion = HTTPEndpoint->getVersion();
+		if (latestVersion > sysVersion)
+		{
+			sysVersion = latestVersion;
+			sd->writeVersion(sysVersion);
+			HTTPEndpoint->setHost("http://192.168.0.38/esp-update");
+			HTTPEndpoint->getUpdate();
+		}
+		else
+		{
+			Serial.println("Latest Version Already Applied!");
+		}
+	}
+	else
+	{
+		Serial.println("ERROR: No WiFi. Update Check Not Performed");
+	}
 }
 
 void handleTempChange(int temp, UserState pirReading)
@@ -379,6 +402,7 @@ void display(int currentAirTempReading)
 
 void checkReadingsTransmission()
 {
+	HTTPEndpoint->setHost("http://192.168.0.38/logs");
 	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
 		if (HTTPEndpoint->sendReadings(readings))

@@ -3,23 +3,24 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <vector>
-// #include "time.h"
-// #include <ctime>
+#include <Update.h>
 
-Endpoint::Endpoint(char *host, unsigned int port)
+Endpoint::Endpoint(char *host)
 {
     //Constructor
     this->host = host;
-    this->port = port;
+}
+
+void Endpoint::setHost(char *host)
+{
+    this->host = host;
 }
 
 bool Endpoint::sendReadings(std::vector<String> readings)
 {
-    //HTTP Client
     HTTPClient client;
-    client.begin(host, port); // change IP accordingly
+    client.begin(host);
     client.addHeader("Content-Type", "application/json");
-
     // add readings to the payload as an array
     StaticJsonDocument<200> doc;
     JsonArray data = doc.createNestedArray("data");
@@ -50,22 +51,82 @@ bool Endpoint::sendReadings(std::vector<String> readings)
     }
 }
 
-// void setTimeFromServer()
-// {
-//     // initialise the time in UTC
-//     configTime(0, 3600, "pool.ntp.org");
-// }
-
-// char *getTime()
-// {
-//     // current date and time on the current system
-//     time_t now = time(0);
-//     // convert now to string form
-//     char *date_time = ctime(&now);
-
-//     return date_time;
-// }
-
 void Endpoint::sendStatus()
 {
+    // TODO: System health update for non-functional reliability testing
+}
+
+float Endpoint::getVersion()
+{
+    HTTPClient client;
+    client.begin(host);
+    int retCode = client.GET();
+
+    if (retCode > 0)
+    { //a real HTTP code
+        Serial.print("HTTP " + String(retCode));
+        if (retCode == HTTP_CODE_OK)
+        {
+            int contentLength = client.getSize();
+            if (contentLength > 0)
+            {
+                return client.getString().toFloat();
+            }
+        }
+    }
+    else
+    {
+        Serial.println("Error... ");
+        Serial.println(HTTPClient::errorToString(retCode));
+    }
+}
+
+void Endpoint::getUpdate()
+{
+    HTTPClient client;
+    client.begin(host);
+    int retCode = client.GET();
+
+    if (retCode > 0)
+    { //a real HTTP code
+        Serial.print("HTTP " + String(retCode));
+        if (retCode == HTTP_CODE_OK)
+        {
+            int contentLength = client.getSize();
+            if (contentLength <= 0)
+            {
+                Serial.println("Update size not specified");
+                return;
+            }
+            if (!Update.begin(contentLength))
+            {
+                Serial.println("Not enough space to upgrade");
+                return;
+            }
+
+            Serial.println("Getting Latest Update");
+            int writeBytes = Update.writeStream(*client.getStreamPtr());
+            if (writeBytes != contentLength)
+            {
+                Serial.println("only written " + String(writeBytes) + "bytes");
+                Serial.println("expected " + String(contentLength) + "bytes");
+                return;
+            }
+            if (!Update.end())
+                Serial.println("Update Error Code" + String(Update.getError()));
+
+            if (!Update.isFinished())
+                Serial.println("Update failed.");
+            else
+            {
+                Serial.println("Update finished: restarting");
+                ESP.restart();
+            }
+        }
+    }
+    else
+    {
+        Serial.println("Error... ");
+        Serial.println(HTTPClient::errorToString(retCode));
+    }
 }
