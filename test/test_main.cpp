@@ -28,17 +28,16 @@ void test_dht_reading(void) { //checks DHT read a temp
     TEST_ASSERT_TRUE(testTemp != 0);
 }
 
-void ready_pir(void) {
+void test_pir_read(void) {
     PIRSensor *pirSensor = NULL;
     pirSensor = new PIRSensor(25, millis());
     TEST_ASSERT_TRUE(!pirSensor->isReady());
-
-    delete pirSensor;
-}
-
-void test_pir_read(void) {
+    while (!pirSensor->isReady()) {
+		pirSensor->warmUp();
+	}
     UserState test = pirSensor->read(millis());
     TEST_ASSERT_TRUE(test == UserState::ABSENT || test == UserState::PRESENT);
+    delete pirSensor;
 }
 
 void test_user_set_min_temp(void)
@@ -310,22 +309,14 @@ void setup()
 
     // test DHT
     RUN_TEST(test_dht_reading);
-    
-    //test PIR 
-    RUN_TEST(ready_pir);
-}
 
-PIRSensor *pirSensor = new PIRSensor(25, millis());
+    //test PIR 
+    RUN_TEST(test_pir_read);
+
+    UNITY_END();
+}
 
 void loop()
 {
-    if (!pirSensor->isReady())
-	{
-		pirSensor->warmUp();
-	}
-    else {
-        RUN_TEST(test_pir_read);
-        UNITY_END();
-    }
 
 }
