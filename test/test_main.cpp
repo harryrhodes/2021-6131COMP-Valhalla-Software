@@ -2,6 +2,7 @@
 #include <unity.h>
 #include <User.h>
 #include <RGB_LED.h>
+#include <SD.h>
 
 void test_user_temp_min_and_max(void)
 {
@@ -101,6 +102,31 @@ void test_user_set_max_temp_below_min_temp()
 //     led->setRGBValue(0, 255, 0);
 // }
 
+void test_sd_initalised(void) {
+    int chipSelect = 5;
+    TEST_ASSERT_TRUE(SD.begin(chipSelect));
+    SD.end();
+}
+
+void test_sd_write(void) {
+    int chipSelect = 5;
+    SD.begin(chipSelect);
+    File testFile = SD.open("/testFile.txt", FILE_WRITE);
+    TEST_ASSERT_TRUE(testFile);
+    TEST_ASSERT_TRUE(testFile.println("test"));
+    testFile.close();
+    SD.end();
+}
+
+void test_sd_read(void) {
+    int chipSelect = 5;
+    SD.begin(chipSelect);
+    File testFile = SD.open("/testFile.txt");
+    TEST_ASSERT_TRUE(testFile);
+    testFile.close();
+    SD.end();
+}
+
 void setup()
 {
     UNITY_BEGIN();
@@ -113,6 +139,11 @@ void setup()
     RUN_TEST(test_user_set_max_temp);
     RUN_TEST(test_user_set_too_high_max_temp);
     RUN_TEST(test_user_set_max_temp_below_min_temp);
+
+    // testing the SD card
+    RUN_TEST(test_sd_initalised);
+    RUN_TEST(test_sd_write);
+    RUN_TEST(test_sd_read);
 
     // testing the RGB LED
     // RUN_TEST(test_rgb_led);
