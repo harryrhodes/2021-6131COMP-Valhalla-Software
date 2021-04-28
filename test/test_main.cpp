@@ -4,6 +4,8 @@
 #include <RGB_LED.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
+#include <DHT.h>
+#include <PIR_Sensor.h>
 
 void test_user_temp_min_and_max(void)
 {
@@ -16,6 +18,27 @@ void test_user_temp_min_and_max(void)
     TEST_ASSERT_EQUAL(minTemp, 20);
     //clean up
     delete user;
+}
+
+void test_dht_reading(void) { //checks DHT read a temp
+    DHT dht(26, DHT11);
+    dht.begin();
+    int testTemp = 0;
+    testTemp = dht.readTemperature();
+    TEST_ASSERT_TRUE(testTemp != 0);
+}
+
+void ready_pir(void) {
+    PIRSensor *pirSensor = NULL;
+    pirSensor = new PIRSensor(25, millis());
+    TEST_ASSERT_TRUE(!pirSensor->isReady());
+
+    delete pirSensor;
+}
+
+void test_pir_read(void) {
+    UserState test = pirSensor->read(millis());
+    TEST_ASSERT_TRUE(test == UserState::ABSENT || test == UserState::PRESENT);
 }
 
 void test_user_set_min_temp(void)
@@ -253,6 +276,7 @@ void test_sd_read(void) {
 
 void setup()
 {
+    
     UNITY_BEGIN();
 
     // testing the min and max temp settings
@@ -284,9 +308,24 @@ void setup()
     RUN_TEST(test_sd_write);
     RUN_TEST(test_sd_read);
 
-    UNITY_END();
+    // test DHT
+    RUN_TEST(test_dht_reading);
+    
+    //test PIR 
+    RUN_TEST(ready_pir);
 }
+
+PIRSensor *pirSensor = new PIRSensor(25, millis());
 
 void loop()
 {
+    if (!pirSensor->isReady())
+	{
+		pirSensor->warmUp();
+	}
+    else {
+        RUN_TEST(test_pir_read);
+        UNITY_END();
+    }
+
 }
