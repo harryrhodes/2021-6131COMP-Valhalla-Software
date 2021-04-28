@@ -2,15 +2,7 @@
 #include <unity.h>
 #include <SD.h>
 
-// void setUp(void) {
-// // set stuff up here
-// }
-
-// void tearDown(void) {
-// // clean stuff up here
-// }
 int chipSelect = 5;
-
 
 void test_sd_initalised(void) {
     TEST_ASSERT_TRUE(SD.begin(chipSelect));
