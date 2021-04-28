@@ -2,6 +2,7 @@
 #include <unity.h>
 #include <User.h>
 #include <RGB_LED.h>
+#include <TFT_eSPI.h>
 
 void test_user_temp_min_and_max(void)
 {
@@ -204,6 +205,26 @@ void test_set_user_status_absent(void)
     delete user;
 }
 
+void test_initialising_display(void)
+{
+    bool passed;
+    TFT_eSPI tft = TFT_eSPI();
+
+    try
+    {
+        tft.init();
+        tft.setRotation(4);
+        tft.fillScreen(TFT_BLACK);
+        passed = true;
+    }
+    catch (const std::exception &e)
+    {
+        passed = false;
+    }
+
+    TEST_ASSERT_TRUE(passed);
+}
+
 void setup()
 {
     UNITY_BEGIN();
@@ -226,6 +247,9 @@ void setup()
     // testing setting user status
     RUN_TEST(test_set_user_status_present);
     RUN_TEST(test_set_user_status_absent);
+
+    //test screen
+    RUN_TEST(test_initialising_display);
 
     UNITY_END();
 }
