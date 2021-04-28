@@ -3,6 +3,7 @@
 #include <User.h>
 #include <RGB_LED.h>
 #include <SD.h>
+#include <TFT_eSPI.h>
 
 void test_user_temp_min_and_max(void)
 {
@@ -17,7 +18,7 @@ void test_user_temp_min_and_max(void)
     delete user;
 }
 
-void test_user_set_min_temp()
+void test_user_set_min_temp(void)
 {
     User *user = NULL;
     user = new User(20, 21);
@@ -29,7 +30,7 @@ void test_user_set_min_temp()
     delete user;
 }
 
-void test_user_set_too_low_min_temp()
+void test_user_set_too_low_min_temp(void)
 {
     User *user = NULL;
     user = new User(20, 21);
@@ -42,7 +43,7 @@ void test_user_set_too_low_min_temp()
     delete user;
 }
 
-void test_user_set_min_temp_over_max_temp()
+void test_user_set_min_temp_over_max_temp(void)
 {
     User *user = NULL;
     user = new User(20, 21);
@@ -55,7 +56,7 @@ void test_user_set_min_temp_over_max_temp()
     delete user;
 }
 
-void test_user_set_max_temp()
+void test_user_set_max_temp(void)
 {
     User *user = NULL;
     user = new User(20, 21);
@@ -67,7 +68,7 @@ void test_user_set_max_temp()
     delete user;
 }
 
-void test_user_set_too_high_max_temp()
+void test_user_set_too_high_max_temp(void)
 {
     User *user = NULL;
     user = new User(20, 21);
@@ -80,7 +81,7 @@ void test_user_set_too_high_max_temp()
     delete user;
 }
 
-void test_user_set_max_temp_below_min_temp()
+void test_user_set_max_temp_below_min_temp(void)
 {
     User *user = NULL;
     user = new User(20, 21);
@@ -93,14 +94,137 @@ void test_user_set_max_temp_below_min_temp()
     delete user;
 }
 
-// void test_rgb_led(void)
-// {
-//     RGBLed *led = NULL;
-//     led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
-//     led->init();
+void test_set_rgb_led_green(void)
+{
+    bool passed;
+    RGBLed *led = NULL;
+    led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
+    led->init();
 
-//     led->setRGBValue(0, 255, 0);
-// }
+    try
+    {
+        led->setRGBValue(0, 255, 0);
+        passed = true;
+    }
+    catch (const std::exception &e)
+    {
+        passed = false;
+    }
+
+    TEST_ASSERT_TRUE(passed);
+
+    delete led;
+}
+
+void test_set_rgb_led_red(void)
+{
+    bool passed;
+    RGBLed *led = NULL;
+    led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
+    led->init();
+
+    try
+    {
+        led->setRGBValue(255, 0, 0);
+        passed = true;
+    }
+    catch (const std::exception &e)
+    {
+        passed = false;
+    }
+
+    TEST_ASSERT_TRUE(passed);
+
+    delete led;
+}
+
+void test_set_rgb_led_blue(void)
+{
+    bool passed;
+    RGBLed *led = NULL;
+    led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
+    led->init();
+
+    try
+    {
+        led->setRGBValue(0, 0, 255);
+        passed = true;
+    }
+    catch (const std::exception &e)
+    {
+        passed = false;
+    }
+
+    TEST_ASSERT_TRUE(passed);
+
+    delete led;
+}
+
+void test_set_rgb_led_amber(void)
+{
+    bool passed;
+    RGBLed *led = NULL;
+    led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
+    led->init();
+
+    try
+    {
+        led->setRGBValue(255, 135, 0);
+        passed = true;
+    }
+    catch (const std::exception &e)
+    {
+        passed = false;
+    }
+
+    TEST_ASSERT_TRUE(passed);
+
+    delete led;
+}
+
+void test_set_user_status_present(void)
+{
+    User *user = NULL;
+    user = new User(20, 21);
+
+    user->setStatus(UserState::PRESENT);
+
+    TEST_ASSERT_EQUAL(UserState::PRESENT, user->getStatus());
+
+    delete user;
+}
+
+void test_set_user_status_absent(void)
+{
+    User *user = NULL;
+    user = new User(20, 21);
+
+    user->setStatus(UserState::ABSENT);
+
+    TEST_ASSERT_EQUAL(UserState::ABSENT, user->getStatus());
+
+    delete user;
+}
+
+void test_initialising_display(void)
+{
+    bool passed;
+    TFT_eSPI tft = TFT_eSPI();
+
+    try
+    {
+        tft.init();
+        tft.setRotation(4);
+        tft.fillScreen(TFT_BLACK);
+        passed = true;
+    }
+    catch (const std::exception &e)
+    {
+        passed = false;
+    }
+
+    TEST_ASSERT_TRUE(passed);
+}
 
 void test_sd_initalised(void) {
     int chipSelect = 5;
@@ -140,13 +264,25 @@ void setup()
     RUN_TEST(test_user_set_too_high_max_temp);
     RUN_TEST(test_user_set_max_temp_below_min_temp);
 
+    // testing the RGB LED
+    // RUN_TEST(test_rgb_led);
+    // testing the RGB LED colour setting
+    RUN_TEST(test_set_rgb_led_green);
+    RUN_TEST(test_set_rgb_led_red);
+    RUN_TEST(test_set_rgb_led_blue);
+    RUN_TEST(test_set_rgb_led_amber);
+
+    // testing setting user status
+    RUN_TEST(test_set_user_status_present);
+    RUN_TEST(test_set_user_status_absent);
+
+    //test screen
+    RUN_TEST(test_initialising_display);
+
     // testing the SD card
     RUN_TEST(test_sd_initalised);
     RUN_TEST(test_sd_write);
     RUN_TEST(test_sd_read);
-
-    // testing the RGB LED
-    // RUN_TEST(test_rgb_led);
 
     UNITY_END();
 }
