@@ -33,6 +33,18 @@ app.post("/logs", (req, res) => {
   res.sendStatus(200);
 });
 
+app.post("/health-check", (req, res) => {
+  const logger = fs.createWriteStream("health-check.txt", {
+    flags: "a",
+  });
+
+  let nowDate = Date();
+  logger.write(`Date: ${nowDate}, Connectivity availability: ${req.body.availability}%.\n`); // add the string to the file
+  logger.end();
+  res.sendStatus(200);
+});
+
+
 app.listen(80, () => console.log(`Started server at port 80!`));
 
 // TO START LOCALLY RUN npm install then npm start

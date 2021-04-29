@@ -64,9 +64,13 @@ int vacantDelayBlinkValue = 1000;
 unsigned long lastVolatileReadingTime;
 int volatileReadingDelayValue = 10000;
 unsigned long lastTransmissionTime;
-int transmissionDelayValue = 100000; // CHANGE TO 45000 BEFORE SUBMISSION
+int transmissionDelayValue = 45000; // CHANGE TO 45000 BEFORE SUBMISSION
 
 std::vector<String> readings;
+int availabilityTotal = 0;
+int availabilitySuccessful = 0;
+int availabilityDelayValue = 300000; // 5 minutes
+unsigned long lastAvailabilityTransmission;
 
 //wi-fi settings
 const char *ssid = "STOCKTON_STUDENTS";
@@ -253,6 +257,13 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 
 			// change last changed time here to rest it
 			lastDebugTime = millis();
+
+			// check wifi availability connection
+			if (WiFi.status() == WL_CONNECTED)
+			{
+				availabilitySuccessful++;
+			}
+			availabilityTotal++;
 		}
 
 		// store readings in volatile memory every 10 seconds
@@ -265,11 +276,11 @@ void handleSensorReadings(int currentAirTempReading, UserState pirReading)
 
 			String reading = "Date: " + String(date_time) + "Temperature: " + String(currentAirTempReading) + "C, Building is: " + String(user->getStatus() == UserState::PRESENT ? "Occupied" : "Vacant") + ".\n";
 			readings.push_back(reading);
-      
-			// reset timer
-			reader -> tick(reading, String(date_time)); // Temp is sent for processing
 
-			Serial.println(readings.size());  
+			// reset timer
+			reader->tick(reading, String(date_time)); // Temp is sent for processing
+
+			Serial.println(readings.size());
 			// reset timer
 			lastVolatileReadingTime = millis();
 		}
@@ -403,7 +414,7 @@ void display(int currentAirTempReading)
 void checkReadingsTransmission()
 {
 	HTTPEndpoint->setHost("http://192.168.0.38/logs");
-	if (wifiConnected && timeDiff(lastTransmissionTime, transmissionDelayValue))
+	if (WiFi.status() == WL_CONNECTED && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
 		if (HTTPEndpoint->sendReadings(readings))
 		{
@@ -415,6 +426,19 @@ void checkReadingsTransmission()
 		}
 		// reset timer
 		lastTransmissionTime = millis();
+	}
+}
+
+void checkAvailabilityTransmission()
+{
+	if (WiFi.status() == WL_CONNECTED && timeDiff(lastAvailabilityTransmission, availabilityDelayValue))
+	{
+		if (HTTPEndpoint->sendAvailability(availabilitySuccessful, availabilityTotal))
+		{
+			availabilitySuccessful = 0;
+			availabilityTotal = 0;
+		}
+		lastAvailabilityTransmission = millis();
 	}
 }
 
@@ -440,5 +464,6 @@ void loop()
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
 		display(currentAirTempReading);											// #3
 		checkReadingsTransmission();											// #4
+		checkAvailabilityTransmission();										// #5
 	}
 }
