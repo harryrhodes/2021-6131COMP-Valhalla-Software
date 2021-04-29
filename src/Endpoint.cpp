@@ -130,3 +130,32 @@ void Endpoint::getUpdate()
         Serial.println(HTTPClient::errorToString(retCode));
     }
 }
+
+bool Endpoint::sendAvailability(int successful, int total)
+{
+    HTTPClient client;
+    client.begin(host);
+    client.addHeader("Content-Type", "application/json");
+    // add readings to the payload as an array
+    StaticJsonDocument<200> doc;
+    doc["availability"] = roundf((successful / total * 100) * 100) / 100;
+
+    String requestBody;
+    serializeJson(doc, requestBody);
+
+    int httpResponseCode = client.POST(requestBody);
+
+    // check the response
+    if (httpResponseCode > 0)
+    {
+        if (httpResponseCode == 200)
+        {
+            return true;
+        }
+        return false;
+    }
+    else
+    {
+        return false;
+    }
+}

@@ -16,5 +16,6 @@ public:
     void sendStatus();
     float getVersion();
     void getUpdate();
+    bool sendAvailability(int successful, int total);
 };
 #endif
