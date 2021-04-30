@@ -98,7 +98,7 @@ void setup()
 	pirSensor = new PIRSensor(25, millis());
 	led = new RGBLed(14, 12, 13, 0, 1, 2, 5000, 8);
 	led->init();
-	HTTPEndpoint = new Endpoint("http://192.168.0.38/version-check");
+	HTTPEndpoint = new Endpoint("http://harryrhodes.com/version-check");
 
 	//Load user settings
 	sd = new SDReader(5, "/minSetting.txt", "/maxSetting.txt", "/version.txt");
@@ -106,7 +106,7 @@ void setup()
 	{
 		sysVersion = sd->readVersion();
 		std::vector<int>
-			temps = sd->readSettings();
+				temps = sd->readSettings();
 		if (temps.size() == 2)
 		{
 			user = new User(temps[0], temps[1]);
@@ -143,7 +143,7 @@ void setup()
 		{
 			sysVersion = latestVersion;
 			sd->writeVersion(sysVersion);
-			HTTPEndpoint->setHost("http://192.168.0.38/esp-update");
+			HTTPEndpoint->setHost("http://harryrhodes.com/esp-update");
 			HTTPEndpoint->getUpdate();
 		}
 		else
@@ -413,7 +413,7 @@ void display(int currentAirTempReading)
 
 void checkReadingsTransmission()
 {
-	HTTPEndpoint->setHost("http://192.168.0.38/logs");
+	HTTPEndpoint->setHost("http://harryrhodes.com/logs");
 	if (WiFi.status() == WL_CONNECTED && timeDiff(lastTransmissionTime, transmissionDelayValue))
 	{
 		if (HTTPEndpoint->sendReadings(readings))
@@ -460,10 +460,10 @@ void loop()
 	else
 	{
 		int currentAirTempReading = dht.readTemperature();
-		checkButtonState();														// #1
+		checkButtonState();																											// #1
 		handleSensorReadings(currentAirTempReading, pirSensor->read(millis())); // #2
-		display(currentAirTempReading);											// #3
-		checkReadingsTransmission();											// #4
-		checkAvailabilityTransmission();										// #5
+		display(currentAirTempReading);																					// #3
+		checkReadingsTransmission();																						// #4
+		checkAvailabilityTransmission();																				// #5
 	}
 }
