@@ -73,8 +73,8 @@ int availabilityDelayValue = 300000; // 5 minutes
 unsigned long lastAvailabilityTransmission;
 
 //wi-fi settings
-const char *ssid = "STOCKTON_STUDENTS";
-const char *password = "03301359065";
+const char *ssid = "x"; //Change Wifi On Runtime
+const char *password = "y";
 boolean wifiConnected = false;
 
 //Display
