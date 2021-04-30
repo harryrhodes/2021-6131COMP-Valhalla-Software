@@ -21,8 +21,13 @@ app.get("/esp-update", (req, res) => {
   res.download(file); //Return Target File
 });
 
+app.get("/logs", (req, res) => {
+  const file = path.resolve("public", "logs.txt");
+  res.download(file); //Return Target File
+});
+
 app.post("/logs", (req, res) => {
-  const logger = fs.createWriteStream("log.txt", {
+  const logger = fs.createWriteStream(path.resolve("public", "logs.txt"), {
     flags: "a", // 'a' means appending (old data will be preserved)
   });
 
@@ -39,11 +44,12 @@ app.post("/health-check", (req, res) => {
   });
 
   let nowDate = Date();
-  logger.write(`Date: ${nowDate}, Connectivity availability: ${req.body.availability}%.\n`); // add the string to the file
+  logger.write(
+    `Date: ${nowDate}, Connectivity availability: ${req.body.availability}%.\n`
+  ); // add the string to the file
   logger.end();
   res.sendStatus(200);
 });
-
 
 app.listen(80, () => console.log(`Started server at port 80!`));
 
